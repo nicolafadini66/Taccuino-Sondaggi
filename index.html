@@ -13,7 +13,7 @@
 <meta name="theme-color" content="#1F3A8A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=Jost:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-<script>window.TS_BUILD="27/10/2026 19:25";window.TS_ARCHIVIO="https://script.google.com/macros/s/AKfycbzJJWw3SdEXCEeQSdqbWqfBeIXuJ821r-CLaHYjGJTG-nQ7LV3-XyaDqXzkXKCMnPZT/exec";</script>
+<script>window.TS_BUILD="27/10/2026 19:40";window.TS_ARCHIVIO="https://script.google.com/macros/s/AKfycbzJJWw3SdEXCEeQSdqbWqfBeIXuJ821r-CLaHYjGJTG-nQ7LV3-XyaDqXzkXKCMnPZT/exec";</script>
 <style>
 /* Layout: blocco note da trincea — testata blu cobalto con scavo e stato, quattro schede (Trincee, US, Esporta, Scavo), contenuti a pannelli; una colonna sul telefono, due sul tablet orizzontale */
 :root{
@@ -325,14 +325,29 @@ function setRel(r,k,arr){
 function saveUs(r){const {id,...d}=r;put('us/'+id,d)}
 function newUsRec(sc,n,extra={}){
   const id=uid('u');const r={scavo:sc,numero:normNum(n),segno:'positiva',rel:{},stato:'bozza',responsabile:me().nome||'',data:today(),...extra};
-  put('us/'+id,r);return{...r,id};
+  put('us/'+id,r);setTimeout(()=>syncRels(sc),0);return{...r,id};
 }
 /* per ogni US: le trincee in cui compare (per menu e filtri anche con centinaia di US) */
 function usTrMap(sc){const m={};sezioniScavo(sc).forEach(s=>(s.strati||[]).forEach(x=>{const n=normNum(x.us);if(!n)return;(m[n]=m[n]||new Set()).add(s.trincea)}));return m}
 const usLabel=u=>`<b class="mono">US ${esc(u.numero)}</b>${u.breve?' · '+esc(u.breve):u.definizione?' · '+esc(u.definizione):''}`;
 const usBreve=(sc,n)=>{const u=findUs(sc,n);return u&&u.breve||''};
 /* la descrizione detta per uno strato diventa la descrizione breve della US (se non ne ha già una) */
-function takeStrati(sc,strati){return(strati||[]).map(x=>{const u=ensureUs(sc,x.us);if(u&&x.descr&&!u.breve){u.breve=x.descr;saveUs(u)}return{us:x.us,cm:x.cm}})}
+function takeStrati(sc,strati){return(strati||[]).map(x=>{const u=findUs(sc,x.us);if(u&&x.descr&&!u.breve){u.breve=x.descr;saveUs(u)}return u||!x.descr?{us:x.us,cm:x.cm}:{us:x.us,cm:x.cm,descr:x.descr}})}
+/* US che compaiono nelle sezioni ma non hanno ancora la scheda */
+function usSenzaScheda(sc,sez){const l=(sez?[sez]:sezioniScavo(sc)).flatMap(s=>(s.strati||[]).map(x=>normNum(x.us))).filter(Boolean);return [...new Set(l)].filter(n=>!findUs(sc,n)).sort(numSort)}
+function creaSchede(sc,nums){nums.forEach(n=>{if(findUs(sc,n))return;const d=sezioniScavo(sc).flatMap(s=>s.strati||[]).find(x=>normNum(x.us)===n&&x.descr);
+  newUsRec(sc,n,d?{breve:d.descr}:{})});
+  sezioniScavo(sc).forEach(s=>{if((s.strati||[]).some(x=>x.descr&&nums.includes(normNum(x.us)))){const {id,...dd}=s;dd.strati=dd.strati.map(x=>nums.includes(normNum(x.us))?{us:x.us,cm:x.cm}:x);put('sezioni/'+id,dd)}});
+  syncRels(sc)}
+/* sequenza fisica dalle sezioni: chi sta sopra copre chi sta sotto. I rapporti nati dalle sezioni (relAuto) si aggiornano da soli,
+   quelli scritti a mano restano */
+function syncRels(sc){let n=0;
+  usOf(sc).forEach(r0=>{const r={...r0,rel:{...(r0.rel||{})}},d=derivedOf(sc,r.numero),auto={...(r.relAuto||{})};let ch=false;
+    ['copre','copertoda'].forEach(k=>{const cur=r.rel[k]||[],a=auto[k]||[];
+      const keep=cur.filter(x=>!(a.includes(x)&&!d[k].includes(x))),add=d[k].filter(x=>!keep.includes(x)),next=[...keep,...add];
+      if(next.join('|')!==cur.join('|')){r.rel[k]=next;ch=true}
+      const na=[...new Set([...a.filter(x=>d[k].includes(x)),...add])].sort(numSort);if(na.join('|')!==[...a].sort(numSort).join('|')){auto[k]=na;ch=true}});
+    if(ch){r.relAuto=auto;saveUs(r);n++}});return n}
 function ensureUs(sc,n){if(!normNum(n))return null;return findUs(sc,n)||newUsRec(sc,n)}
 /* aggiunge "copre / coperto da" ricavati dalle sezioni; restituisce quanti rapporti ha aggiunto */
 function applySezRels(sc,nums){
@@ -342,7 +357,7 @@ function applySezRels(sc,nums){
     ['copre','copertoda'].forEach(k=>{const cur=(r.rel&&r.rel[k])||[];const miss=d[k].filter(x=>!cur.includes(x));if(miss.length){added+=miss.length;setRel(r,k,[...cur,...miss]);saveUs(r)}})});
   return added;
 }
-const nextUsNum=sc=>{const ns=usOf(sc).map(u=>parseInt(u.numero,10)).filter(n=>!isNaN(n));return String(ns.length?Math.max(...ns)+1:1)};
+const nextUsNum=sc=>{const ns=[...usOf(sc).map(u=>u.numero),...sezioniScavo(sc).flatMap(s=>(s.strati||[]).map(x=>x.us))].map(n=>parseInt(n,10)).filter(n=>!isNaN(n));return String(ns.length?Math.max(...ns)+1:1)};
 
 /* voci suggerite: predefinite + quelle già usate nello scavo */
 /* voci dei menu a tendina: quelle del Taccuino di scavo, più alcune tipiche dei sondaggi; si arricchiscono con le voci usate nello scavo */
@@ -630,7 +645,7 @@ function renderTrincee(){
 function newSezione(trId,numero,strati,dubbi){
   const t=S.docs['trincee/'+trId],ex=sezioniOf(trId);const n=numero||String((Math.max(0,...ex.map(s=>parseInt(s.numero,10)||0)))+1);
   const id=uid('s');const s={scavo:t.scavo,trincea:trId,numero:n,strati:strati?takeStrati(t.scavo,strati):[{us:'',cm:''}],dubbi:dubbi||[]};
-  put('sezioni/'+id,s);return{...s,id};
+  put('sezioni/'+id,s);syncRels(t.scavo);return{...s,id};
 }
 function openSez(id){S.view='sezione';S.openSez=id;S.tab='trincee';render();scrollTo(0,0)}
 
@@ -639,7 +654,7 @@ let sezSaveT;
 function renderSezione(){
   const s0=S.docs['sezioni/'+S.openSez];if(!s0){S.view=null;return render()}
   const s={...JSON.parse(JSON.stringify(s0)),id:S.openSez},sc=curScavo(),trs=trinceeOf(sc.id);
-  const save=(rebuild)=>{clearTimeout(sezSaveT);sezSaveT=setTimeout(()=>{const {id,...d}=s;put('sezioni/'+id,d)},400);$('#tot').textContent=sezTot(s).toFixed(2);previewSez(s);if(rebuild)rows();links()};
+  const save=(rebuild)=>{clearTimeout(sezSaveT);sezSaveT=setTimeout(()=>{const {id,...d}=s;put('sezioni/'+id,d);syncRels(sc.id);links()},400);$('#tot').textContent=sezTot(s).toFixed(2);previewSez(s);if(rebuild)rows();links()};
   $('#main').innerHTML=`<div class="stack">
     <div class="row"><button class="ghost" data-act="back">← Trincee</button><h2 id="sTitle">${esc(sezTitle(s))}</h2><span class="spacer"></span>${s.foto&&S.docs['foto/'+s.foto]?`<button class="sm" data-act="vediFoto" data-id="${esc(s.foto)}">Vedi la pagina del quaderno</button>`:''}</div>
     ${(s.dubbi&&s.dubbi.length)?`<div class="panel" style="border-color:var(--warn)"><b>Da verificare</b><ul style="margin:0">${s.dubbi.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><div><button class="sm" id="dubOk">Verificato</button></div></div>`:''}
@@ -662,7 +677,8 @@ function renderSezione(){
           <h3>Elenco US della sezione</h3>
           <div class="tbl"><table class="us mini"><thead><tr><th>US</th><th>Descrizione</th><th>Spess.</th><th>Coperta da</th><th>Copre</th><th>Scheda</th></tr></thead><tbody id="usLinks"></tbody></table></div>
           <p class="note">Nel disegno compare solo il numero: in un'ellisse le unità positive, in un rettangolo i tagli, in una casetta le strutture (il tipo si sceglie nella scheda US).</p>
-          <div class="row"><button id="relGo">Aggiorna i rapporti delle US</button><span class="note">Chi sta sopra copre chi sta sotto: li aggiunge alle schede (copre / coperto da).</span></div>
+          <div id="nuoveUs"></div>
+          <p class="note">I rapporti «copre» e «coperto da» vanno da soli nella sequenza fisica delle schede: chi sta sopra copre chi sta sotto. Se sposti o togli uno strato si aggiornano; quelli scritti a mano nella scheda restano.</p>
         </section>
       </div>
       <div class="stack">
@@ -687,10 +703,10 @@ function renderSezione(){
       up.onclick=()=>{[s.strati[i-1],s.strati[i]]=[s.strati[i],s.strati[i-1]];save(true)};
       dn.onclick=()=>{[s.strati[i+1],s.strati[i]]=[s.strati[i],s.strati[i+1]];save(true)};
       us.oninput=()=>{x.us=us.value.trim().toUpperCase();save(false)};
-      us.onchange=()=>{x.us=normNum(us.value);if(x.us)ensureUs(sc.id,x.us);save(true)};
+      us.onchange=()=>{x.us=normNum(us.value);save(true)};
       cm.oninput=()=>{x.cm=cm.value.trim();save(false)};
       de.oninput=()=>{const n=normNum(x.us);if(!n){de.value='';return toast('Scrivi o scegli prima il numero della US.')}
-        const u=ensureUs(sc.id,n);u.breve=de.value;delete x.descr;saveUs(u);previewSez(s);links()};
+        const u=findUs(sc.id,n);if(u){u.breve=de.value;delete x.descr;saveUs(u)}else{x.descr=de.value;save(false)}links()};
       pk.onclick=()=>{const open=pick.hidden;$$('.usPick').forEach(p=>p.hidden=true);$$('.pk').forEach(b=>b.setAttribute('aria-expanded','false'));
         if(!open)return;pick.hidden=false;pk.setAttribute('aria-expanded','true');
         const all=usOf(sc.id),tm=usTrMap(sc.id),here=all.filter(u=>tm[normNum(u.numero)]&&tm[normNum(u.numero)].has(s.trincea)),
@@ -701,7 +717,7 @@ function renderSezione(){
           ${multi.length?`<span class="note" style="flex-basis:100%">Comuni a più trincee</span>${btns(multi)}`:''}</div>
           <button class="sm primary" data-n="${esc(nx)}">+ Nuova US n. ${esc(nx)}</button>`;
         const pl=pick.querySelector('.pl'),pq=pick.querySelector('.pq'),base=pl.innerHTML;
-        const bind=()=>pick.querySelectorAll('button[data-n]').forEach(b=>b.onclick=()=>{x.us=b.dataset.n;ensureUs(sc.id,x.us);save(true);const d=$('#sde'+i);if(d&&!d.value)d.focus()});
+        const bind=()=>pick.querySelectorAll('button[data-n]').forEach(b=>b.onclick=()=>{x.us=b.dataset.n;save(true);const d=$('#sde'+i);if(d&&!d.value)d.focus()});
         pq.oninput=()=>{const q=pq.value.trim().toLowerCase();if(!q){pl.innerHTML=base;bind();return}
           const hit=all.filter(u=>normNum(u.numero).toLowerCase()===q||normNum(u.numero).toLowerCase().startsWith(q)||String(u.breve||u.definizione||'').toLowerCase().includes(q)).slice(0,40);
           pl.innerHTML=hit.length?btns(hit):'<span class="note">Nessuna US trovata: usa «Nuova US».</span>';bind()};
@@ -713,7 +729,13 @@ function renderSezione(){
     $('#usLinks').innerHTML=st.map((x,i)=>{const n=normNum(x.us),u=findUs(sc.id,n),sopra=i?normNum(st[i-1].us):'',sotto=i<st.length-1?normNum(st[i+1].us):'';
       return `<tr data-act="apriUsNum" data-n="${esc(n)}"><td class="n">${esc(n)}</td><td>${esc(u&&u.breve||'')}</td><td class="mono small">${esc(x.cm)}${x.cm?' cm':''}</td>
         <td class="rel">${esc(sopra)}</td><td class="rel">${esc(sotto)}</td><td>${u?`<span class="chip ${u.stato==='completa'?'completa':'bozza'}">${u.stato==='completa'?'completa':'bozza'}</span>`:''}</td></tr>`}).join('')
-      ||'<tr><td colspan="6" class="note">Nessuna US.</td></tr>'}
+      ||'<tr><td colspan="6" class="note">Nessuna US.</td></tr>';
+    const mancano=usSenzaScheda(sc.id,s),box=$('#nuoveUs');
+    box.innerHTML=mancano.length&&!(S.dopo||[]).join('|').includes(mancano.join('|'))?`<div class="derived"><b>${mancano.length===1?'La US '+esc(mancano[0])+' non ha':'Le US '+esc(mancano.join(', '))+' non hanno'} ancora la scheda.</b>
+      <span class="note">Creandola, numero, descrizione breve e rapporti della sequenza fisica vanno subito nella scheda; il resto lo compili quando vuoi.</span>
+      <div class="row"><button class="sm primary" id="creaSk">Crea ${mancano.length===1?'la scheda':'le schede'}</button><button class="sm" id="dopoSk">Più tardi</button></div></div>`:'';
+    const cs=$('#creaSk');if(cs)cs.onclick=()=>{creaSchede(sc.id,mancano);toast(mancano.length===1?`Creata la scheda della US ${mancano[0]}.`:`Create ${mancano.length} schede US.`);links();rows()};
+    const ds=$('#dopoSk');if(ds)ds.onclick=()=>{S.dopo=[...(S.dopo||[]),mancano.join('|')];links()}}
   rows();links();previewSez(s);
   $('#sTr').onchange=e=>{s.trincea=e.target.value;$('#sTitle').textContent=sezTitle(s);save(false)};
   $('#sNum').oninput=e=>{s.numero=e.target.value.trim();$('#sTitle').textContent=sezTitle(s);save(false)};
@@ -722,13 +744,12 @@ function renderSezione(){
   $('#dettAGo').onclick=()=>{const r=interpretaDettato(da.value);if(!r.strati.length)return;s.strati=s.strati.filter(x=>x.us||x.cm).concat(takeStrati(sc.id,r.strati));
     if(r.avvisi.length)s.dubbi=[...(s.dubbi||[]),...r.avvisi];da.value='';$('#dettAPrev').innerHTML='';$('#dettAGo').disabled=true;save(true)};
   const ok=$('#dubOk');if(ok)ok.onclick=()=>{s.dubbi=[];const {id,...d}=s;put('sezioni/'+id,d);render()};
-  $('#relGo').onclick=()=>{const {id,...d}=s;put('sezioni/'+id,d);const n=applySezRels(sc.id,[...new Set(s.strati.map(x=>normNum(x.us)).filter(Boolean))]);toast(n?(n===1?'Aggiunto 1 rapporto alle schede US.':`Aggiunti ${n} rapporti alle schede US.`):'I rapporti erano già tutti presenti.');links()};
   $$('#fmt button').forEach(b=>b.onclick=()=>{S.fmt=b.dataset.f;persist();$$('#fmt button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)))});
   const msg=(t,e)=>{const m=$('#sMsg');m.textContent=t;m.className='msg'+(e?' err':'')};
   $('#dl').onclick=async()=>{try{const [n,b]=await sezFile(s,S.fmt);await offerFile(n,b)}catch(e){msg(e.message,true)}};
   $('#drv').onclick=async()=>{msg('Salvo…');try{const [n,b]=await sezFile(s,S.fmt);const j=await toDrive(sc,'Sezioni',n,b);msg('Salvata in '+j.cartella+': '+n)}catch(e){msg(e.message,true)}};
   $('#delSez').onclick=()=>{$('#delBox').innerHTML=`<div class="confirm"><span>Eliminare definitivamente questa sezione? Le schede US restano.</span><button class="sm danger" id="delY">Elimina</button><button class="sm" id="delN">Annulla</button></div>`;
-    $('#delY').onclick=()=>{remove('sezioni/'+s.id);S.view=null;render()};$('#delN').onclick=()=>$('#delBox').innerHTML=''};
+    $('#delY').onclick=()=>{clearTimeout(sezSaveT);remove('sezioni/'+s.id);syncRels(sc.id);S.view=null;render()};$('#delN').onclick=()=>$('#delBox').innerHTML=''};
 }
 
 /* ---------- elenco US */
@@ -738,6 +759,7 @@ function renderUsList(){
   const nz=list.filter(u=>!usInSezioni(sc.id,u.numero).length).length;
   $('#main').innerHTML=`<div class="stack">
     <div class="row"><h2>Unità stratigrafiche</h2><span class="spacer"></span><button class="primary" data-act="nuovaUs">+ Nuova US (n. ${esc(nextUsNum(sc.id))})</button></div>
+    ${(()=>{const m=usSenzaScheda(sc.id);return m.length?`<div class="panel" style="border-color:var(--warn)"><b>US disegnate nelle sezioni ma ancora senza scheda: ${esc(m.join(', '))}.</b><div><button class="primary sm" data-act="creaSchede">Crea ${m.length===1?'la scheda':'le '+m.length+' schede'}</button></div></div>`:''})()}
     ${dup.length?`<div class="panel" style="border-color:var(--err)"><b>Numeri doppi: ${esc(dup.join(', '))}.</b> Probabilmente due persone hanno creato la stessa US senza rete: apri le schede e cambia il numero di una delle due.</div>`:''}
     ${list.length>12?`<div class="row"><select id="fTr" style="width:auto"><option value="">Tutte le trincee</option>${trinceeOf(sc.id).map(t=>`<option value="${esc(t.id)}" ${S.fTr===t.id?'selected':''}>${esc(trLabel(t))}</option>`).join('')}</select>
       <input id="fQ" type="search" placeholder="Cerca numero o descrizione" value="${esc(S.fQ||'')}" style="flex:1 1 200px;width:auto"><span class="note" id="fN"></span></div>`:''}
@@ -847,7 +869,7 @@ function renderScheda(){
     const old=normNum(r.numero);r.numero=nn;saveUs(r);
     usOf(sc.id).forEach(t=>{if(t.id===r.id||!t.rel)return;let ch=false;Object.keys(t.rel).forEach(k=>{if(t.rel[k].includes(old)){t.rel[k]=t.rel[k].map(x=>x===old?nn:x);ch=true}});if(ch)saveUs(t)});
     sezioniScavo(sc.id).forEach(s=>{if((s.strati||[]).some(x=>normNum(x.us)===old)){const {id,...dd}=s;dd.strati=dd.strati.map(x=>normNum(x.us)===old?{...x,us:nn}:x);put('sezioni/'+id,dd)}});
-    toast(`Numero cambiato in ${nn}, anche nelle sezioni e nei rapporti.`)};
+    syncRels(sc.id);toast(`Numero cambiato in ${nn}, anche nelle sezioni e nei rapporti.`)};
   const ap=$('#applyRel');if(ap)ap.onclick=()=>{missRel.forEach(([k,a])=>setRel(r,k,[...((r.rel&&r.rel[k])||[]),...a]));saveUs(r);render()};
   /* descrizione dettata → voci della scheda, sempre da verificare prima di inserirle */
   $('#quickGo').onclick=async()=>{const t=$('#quick').value.trim();if(!t)return;const m=$('#quickMsg');m.className='msg';
@@ -1110,6 +1132,7 @@ const ACT={
   back(){S.view=null;S.tab='trincee';render()},
   backUs(){S.view=null;S.tab='us';render()},
   apriUs(d){openUs(d.id)},
+  creaSchede(){const sc=curScavo(),m=usSenzaScheda(sc.id);creaSchede(sc.id,m);toast(m.length===1?`Creata la scheda della US ${m[0]}.`:`Create ${m.length} schede US.`);render()},
   apriUsNum(d){const sc=curScavo();const u=ensureUs(sc.id,d.n);openUs(u.id)},
   vediFoto(d){vediFoto(d.id)},
   verificaFoto(d){S.view='verifica';S.openFoto=d.id;S.tab='trincee';render();scrollTo(0,0)},
