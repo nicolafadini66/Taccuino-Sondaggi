@@ -13,7 +13,7 @@
 <meta name="theme-color" content="#1F3A8A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=Jost:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-<script>window.TS_BUILD="27/10/2026 19:05";window.TS_ARCHIVIO="https://script.google.com/macros/s/AKfycbzJJWw3SdEXCEeQSdqbWqfBeIXuJ821r-CLaHYjGJTG-nQ7LV3-XyaDqXzkXKCMnPZT/exec";</script>
+<script>window.TS_BUILD="27/10/2026 19:15";window.TS_ARCHIVIO="https://script.google.com/macros/s/AKfycbzJJWw3SdEXCEeQSdqbWqfBeIXuJ821r-CLaHYjGJTG-nQ7LV3-XyaDqXzkXKCMnPZT/exec";</script>
 <style>
 /* Layout: blocco note da trincea — testata blu cobalto con scavo e stato, quattro schede (Trincee, US, Esporta, Scavo), contenuti a pannelli; una colonna sul telefono, due sul tablet orizzontale */
 :root{
@@ -117,6 +117,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--focus);outline:none;b
 .uscell{display:flex;min-width:0}.uscell input{border-top-right-radius:0;border-bottom-right-radius:0;font-family:var(--f-mono);font-weight:600}
 .uscell .pk{border-left:0;border-top-left-radius:0;border-bottom-left-radius:0;padding:0 9px;min-width:36px;justify-content:center;color:var(--muted);background:var(--sunk)}
 .uscell .pk[aria-expanded="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.simili{display:flex;flex-direction:column;gap:4px}.hint-row{font-size:14px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-left:3px solid var(--warn);padding:4px 0 4px 8px}
 .combo{display:flex;align-items:stretch;min-width:0}.combo>input,.combo>textarea{border-top-right-radius:0;border-bottom-right-radius:0;flex:1;min-width:0}
 .combo>.pk{border-left:0;border-top-left-radius:0;border-bottom-left-radius:0;padding:0 12px;min-width:44px;justify-content:center;color:var(--muted);background:var(--sunk)}
 .combo>.pk[aria-expanded="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
@@ -372,7 +373,16 @@ const VOCI={
   datazione:[],fase:[],responsabile:[]};
 /* voci a scelta multipla (separate da virgola) */
 const MULTI=new Set(['criteri','geologici','organici','artificiali','elementiDatanti','reperti','campionature','osservazioni']);
-function vociFor(k,sc){const s=new Set(VOCI[k]||[]);usOf(sc).forEach(u=>(MULTI.has(k)?tk(u[k]):[String(u[k]||'').trim()]).forEach(v=>{if(v&&v.length<60)s.add(v)}));return [...s].sort((a,b)=>a.localeCompare(b,'it'))}
+function vociFor(k,sc,escludi){const s=new Set(VOCI[k]||[]);usOf(sc).forEach(u=>{if(u.id===escludi)return;(MULTI.has(k)?tk(u[k]):[String(u[k]||'').trim()]).forEach(v=>{if(v&&v.length<60)s.add(v)})});return [...s].sort((a,b)=>a.localeCompare(b,'it'))}
+/* voci simili: distanza di Levenshtein, senza accenti e maiuscole */
+const norm=t=>String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+function lev(a,b){if(a===b)return 0;const m=a.length,n=b.length;if(!m||!n)return m||n;let p=Array.from({length:n+1},(_,j)=>j);
+  for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[n]}
+/* per ogni voce scritta a mano che non è nell'elenco, la voce dell'elenco più simile (se abbastanza vicina) */
+function vociSimili(valore,elenco,multi){const out=[];const L=elenco.map(v=>[v,norm(v)]);
+  (multi?tk(valore):[String(valore||'').trim()]).filter(Boolean).forEach(t=>{const n=norm(t);if(L.some(([,x])=>x===n))return;
+    let best=null,bd=99;L.forEach(([v,x])=>{const d=lev(n,x);if(d<bd){bd=d;best=v}});
+    const soglia=n.length<=5?1:n.length<=10?2:3;if(best&&bd>0&&bd<=soglia)out.push({da:t,a:best})});return out}
 /* menu a tendina a pulsanti, comodo col dito: ▾ apre l'elenco; voci multiple si accendono e spengono, voce singola si sceglie */
 function pickHtml(k,inner){return `<div class="combo">${inner}<button type="button" class="pk" data-pk="${k}" aria-label="Scegli dall'elenco" aria-expanded="false">▾</button></div><div class="usPick" data-pl="${k}" hidden></div>`}
 function bindPick(root,getList,multiSet){
@@ -768,12 +778,12 @@ function renderScheda(){
   const missRel=['copre','copertoda'].map(k=>[k,d[k].filter(x=>!((r.rel&&r.rel[k])||[]).includes(x))]).filter(([,a])=>a.length);
   const field=([k,l,span,type,opts])=>{const v=r[k]??'';const auto=type==='auto'?d[k]:'';
     const lab=`<span>${esc(l)}${auto?` <small>(se vuoto: dalle sezioni)</small>`:''}</span>`;
-    if(VOCI[k]&&type!=='sel'&&type!=='date'){const el=type==='area'?`<textarea data-uf="${k}" rows="3">${esc(v)}</textarea>`:`<input data-uf="${k}" value="${esc(v)}" ${auto?`placeholder="${esc(auto)}"`:''}>`;
-      return `<div class="f c${span}">${lab}${pickHtml(k,el)}</div>`}
-    if(type==='area')return `<label class="f c${span}">${lab}<textarea data-uf="${k}" rows="${k==='descrizione'?5:3}">${esc(v)}</textarea></label>`;
+    if(VOCI[k]&&type!=='sel'&&type!=='date'){const el=type==='area'?`<textarea data-uf="${k}" rows="3" spellcheck="true" lang="it">${esc(v)}</textarea>`:`<input data-uf="${k}" spellcheck="true" lang="it" value="${esc(v)}" ${auto?`placeholder="${esc(auto)}"`:''}>`;
+      return `<div class="f c${span}">${lab}${pickHtml(k,el)}<div class="simili" data-sim="${k}"></div></div>`}
+    if(type==='area')return `<label class="f c${span}">${lab}<textarea data-uf="${k}" rows="${k==='descrizione'?5:3}" spellcheck="true" lang="it">${esc(v)}</textarea></label>`;
     if(type==='sel')return `<label class="f c${span}">${lab}<select data-uf="${k}">${opts.map(o=>`<option value="${esc(o)}" ${o===v?'selected':''}>${esc(o||'—')}</option>`).join('')}</select></label>`;
     if(type==='date')return `<label class="f c${span}">${lab}<input type="date" data-uf="${k}" value="${esc(v)}"></label>`;
-    return `<label class="f c${span}">${lab}<input data-uf="${k}" value="${esc(v)}" ${auto?`placeholder="${esc(auto)}"`:''} ${type==='list'?`list="dl-${k}"`:''}></label>`};
+    return `<label class="f c${span}">${lab}<input data-uf="${k}" value="${esc(v)}" spellcheck="true" lang="it" ${auto?`placeholder="${esc(auto)}"`:''} ${type==='list'?`list="dl-${k}"`:''}></label>`};
   $('#main').innerHTML=`<div class="stack">
     <div class="row"><button class="ghost" data-act="backUs">← Elenco US</button></div>
     <div class="row" style="align-items:flex-end">
@@ -795,7 +805,7 @@ function renderScheda(){
     </section>
     ${SCH.map(sec=>`<details class="sec" ${sec.closed?'':'open'}><summary><h3>${esc(sec.t)}</h3></summary>
       ${sec.rel?`<div class="relgrid">${REL_UI.map(([k,l])=>`<label class="f"><span>${esc(l)}</span><input data-rel="${k}" value="${esc(joinNums(r.rel&&r.rel[k]))}" placeholder="numeri separati da virgola"></label>`).join('')}</div>`
-      :`<div class="grid12">${sec.f.map(field).join('')}${sec.desc?`<div class="c12"><button class="sm" id="compose">Componi la descrizione dai campi</button></div>`:''}</div>`}</details>`).join('')}
+      :`<div class="grid12">${sec.f.map(field).join('')}${sec.desc?`<div class="c12 row"><button class="sm" id="compose">Componi la descrizione dai campi</button>${API.ai?'<button class="sm" id="orto">Controlla l’ortografia</button>':''}<span class="msg" id="ortoMsg"></span></div><div class="c12" id="ortoRev"></div>`:''}</div>`}</details>`).join('')}
     <section class="panel">
       <div class="row"><button class="primary" id="pdf">Scarica la scheda PDF</button><button id="pdfDrv">Salva nella cartella dello scavo</button><span class="spacer"></span><button class="sm danger" id="delUs">Elimina US</button></div>
       <span class="msg" id="uMsg"></span><div id="delBox"></div>
@@ -804,6 +814,25 @@ function renderScheda(){
   </div>`;
   $$('[data-uf]').forEach(e=>e.addEventListener(e.tagName==='SELECT'?'change':'input',()=>{r[e.dataset.uf]=e.value;save()}));
   bindPick($('#main'),k=>k==='responsabile'?[...new Set([...usOf(sc.id).map(u=>u.responsabile),me().nome].filter(Boolean))]:vociFor(k,sc.id),MULTI);
+  /* avviso quando una voce scritta a mano somiglia a una dell'elenco */
+  const simili=e=>{const k=e.dataset.uf,box=$(`[data-sim="${k}"]`);if(!box)return;const ss=vociSimili(e.value,vociFor(k,sc.id,r.id),MULTI.has(k));
+    box.innerHTML=ss.map((x,i)=>`<div class="hint-row">«${esc(x.da)}» somiglia a «${esc(x.a)}», già nell'elenco. <button type="button" class="sm" data-usa="${i}">Usa «${esc(x.a)}»</button><button type="button" class="sm ghost" data-lascia="${i}">Lascia così</button></div>`).join('');
+    box.querySelectorAll('[data-usa]').forEach(b=>b.onclick=()=>{const x=ss[+b.dataset.usa];
+      e.value=MULTI.has(k)?tk(e.value).map(t=>t===x.da?x.a:t).join(', '):x.a;e.dispatchEvent(new Event('input',{bubbles:true}));simili(e)});
+    box.querySelectorAll('[data-lascia]').forEach(b=>b.onclick=()=>b.closest('.hint-row').remove())};
+  $$('[data-uf]').forEach(e=>{if(VOCI[e.dataset.uf])e.addEventListener('change',()=>simili(e))});
+  document.querySelectorAll('.usPick[data-pl]').forEach(pl=>pl.addEventListener('click',()=>{const e=pl.previousElementSibling&&pl.previousElementSibling.querySelector('[data-uf]');if(e)setTimeout(()=>simili(e),0)}));
+  /* controllo ortografico della descrizione con Claude (con la chiave API): proposte da accettare */
+  const ob=$('#orto');if(ob)ob.onclick=async()=>{const ta=$('[data-uf="descrizione"]'),t=ta.value.trim(),m=$('#ortoMsg');if(!t)return;
+    m.innerHTML='<span class="spin"></span>Controllo…';m.className='msg';
+    try{const j=await api('correggiTesto',{testo:t});const mod=(j.modifiche||[]).filter(x=>x.da&&x.a&&x.da!==x.a&&t.includes(x.da));
+      if(!mod.length){m.textContent='Nessun errore trovato.';$('#ortoRev').innerHTML='';return}
+      m.textContent=`${mod.length} correzion${mod.length===1?'e':'i'} propost${mod.length===1?'a':'e'}: scegli quali applicare.`;
+      $('#ortoRev').innerHTML=`<div class="derived">${mod.map((x,i)=>`<label class="row small"><input type="checkbox" data-om="${i}" checked style="width:auto;min-height:auto"> <s>${esc(x.da)}</s> → <b>${esc(x.a)}</b></label>`).join('')}
+        <div class="row"><button class="sm primary" id="oOk">Applica</button><button class="sm" id="oNo">Annulla</button></div></div>`;
+      $('#oNo').onclick=()=>{$('#ortoRev').innerHTML='';m.textContent=''};
+      $('#oOk').onclick=()=>{let v=ta.value;mod.forEach((x,i)=>{if($(`[data-om="${i}"]`).checked)v=v.split(x.da).join(x.a)});ta.value=v;r.descrizione=v;saveUs(r);$('#ortoRev').innerHTML='';m.textContent='Correzioni applicate.'}}
+    catch(e){m.textContent=e.code==='bad_request'?'Aggiorna lo script dell’archivio (Code.gs) per usare il controllo con Claude.':e.message;m.className='msg err'}};
   $$('[data-rel]').forEach(e=>e.addEventListener('change',()=>{setRel(r,e.dataset.rel,e.value);e.value=joinNums(r.rel[e.dataset.rel]);saveUs(r)}));
   $$('[data-seg]').forEach(b=>b.onclick=()=>{r.segno=b.dataset.seg;$$('[data-seg]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));save()});
   $$('[data-st]').forEach(b=>b.onclick=()=>{r.stato=b.dataset.st;$$('[data-st]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));save()});

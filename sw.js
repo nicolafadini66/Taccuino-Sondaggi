@@ -1,5 +1,5 @@
 /* Taccuino sondaggi — funzionamento offline: l'app resta sul dispositivo dopo la prima apertura con la rete */
-const VER = 'ts-2026-10-27-1905';
+const VER = 'ts-2026-10-27-1915';
 const SHELL = ['./', './index.html', './iccd.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-180.png'];
 const CDN = ['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'];
 self.addEventListener('install', e => {
