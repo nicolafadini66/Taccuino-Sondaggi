@@ -1,0 +1,1048 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Taccuino sondaggi</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sondaggi">
+<meta name="theme-color" content="#1F3A8A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=Jost:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<script>window.TS_BUILD="27/10/2026 18:45";/* window.TS_ARCHIVIO="https://script.google.com/macros/s/…/exec"; */</script>
+<style>
+/* Layout: blocco note da trincea — testata blu cobalto con scavo e stato, quattro schede (Trincee, US, Esporta, Scavo), contenuti a pannelli; una colonna sul telefono, due sul tablet orizzontale */
+:root{
+  --paper:#EDF0F5; --surface:#FFFFFF; --sunk:#F5F7FA; --ink:#141B2D; --muted:#566079; --line:#CDD4E1;
+  --accent:#1F3A8A; --accent-2:#C2622D; --on-accent:#FFFFFF; --head:#1F3A8A; --on-head:#FFFFFF;
+  --ok:#22764A; --warn:#A35E0B; --err:#B3261E; --focus:#C2622D; --grid:#DFE4EE;
+  --f-display:"Archivo Narrow","Arial Narrow",Arial,sans-serif;
+  --f-body:"IBM Plex Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:8px;
+}
+@media (prefers-color-scheme:dark){:root{
+  --paper:#0F1424; --surface:#182036; --sunk:#131A2D; --ink:#E6EAF4; --muted:#9AA4BD; --line:#2C3654;
+  --accent:#8EA8FF; --accent-2:#F08A52; --on-accent:#0F1424; --head:#152A66; --on-head:#FFFFFF;
+  --ok:#5DBE85; --warn:#E39A3B; --err:#F2827A; --focus:#F08A52; --grid:#1E2740; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;padding-bottom:env(safe-area-inset-bottom,0px)}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1200px;margin:0 auto}
+header.top{position:sticky;top:0;z-index:10;background:var(--head);color:var(--on-head);padding-top:env(safe-area-inset-top,0px)}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding-block:10px 6px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap}
+.brand svg{width:30px;height:30px;flex:none}
+.scavo-pick{flex:1 1 200px;min-width:0}
+.scavo-pick select{background:rgba(255,255,255,.12);color:var(--on-head);border-color:rgba(255,255,255,.35)}
+.scavo-pick select option{color:#141B2D;background:#fff}
+.pill{font-size:13px;font-weight:600;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.14);white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.pill::before{content:"";width:8px;height:8px;border-radius:50%;background:#9AA4BD}
+.pill.ok::before{background:#5DD08F}.pill.warn::before{background:#F3B04B}.pill.err::before{background:#FF8A80}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+nav.tabs button{font-family:var(--f-display);font-size:18px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;background:none;border:0;border-bottom:4px solid transparent;color:rgba(255,255,255,.72);padding:8px 14px 6px;cursor:pointer;white-space:nowrap;min-height:44px;border-radius:0}
+nav.tabs button[aria-selected="true"]{color:#fff;border-bottom-color:var(--accent-2)}
+nav.tabs .count{font-family:var(--f-mono);font-size:12px;background:rgba(255,255,255,.16);border-radius:4px;padding:0 5px;margin-left:5px}
+main{padding-block:18px 80px}
+h2{font-family:var(--f-display);font-size:28px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin:0;text-wrap:balance}
+h3{font-family:var(--f-display);font-size:18px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin:0}
+.muted{color:var(--muted)} .small{font-size:14px} .mono{font-family:var(--f-mono)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.spacer{flex:1}
+.stack{display:flex;flex-direction:column;gap:14px;min-width:0}
+button,.btn{font:inherit;font-weight:600;font-size:15px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 14px;cursor:pointer;min-height:44px;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+button:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+button.accent2{background:var(--accent-2);border-color:var(--accent-2);color:#fff}
+button.danger{color:var(--err)}
+button.ghost{border-color:transparent;background:none}
+button.sm{min-height:34px;padding:4px 10px;font-size:14px}
+button:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:9px 10px;width:100%;min-height:44px;min-width:0}
+textarea{min-height:84px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:var(--focus);outline:none;box-shadow:0 0 0 2px color-mix(in srgb,var(--focus) 25%,transparent)}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f>span{font-family:var(--f-display);font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.f>span small{font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel.lead{border-left:5px solid var(--accent-2)}
+.grid12{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px}
+.c12{grid-column:span 12}.c8{grid-column:span 8}.c6{grid-column:span 6}.c4{grid-column:span 4}.c3{grid-column:span 3}
+@media (max-width:720px){.c8,.c6,.c4{grid-column:span 12}.c3{grid-column:span 6}}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:980px){.two{grid-template-columns:minmax(0,1fr)}}
+.empty{border:1px dashed var(--line);border-radius:var(--r);padding:28px 20px;text-align:center;background:var(--sunk)}
+.empty p{max-width:52ch;margin:8px auto 16px}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:var(--r);font-weight:600;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.seg button{border:0;border-radius:0;min-height:42px;font-family:var(--f-mono);font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.tiposel{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.tiposel button{border:0;border-radius:0;min-height:42px}
+.tiposel button[aria-pressed="true"].pos{background:#F3E63F;color:#1b1606}
+.tiposel button[aria-pressed="true"].neg{background:#FF6F6F;color:#1b0606}
+.tiposel button[aria-pressed="true"].str{background:#B5FB6F;color:#0e1b06}
+.chip.str{background:#B5FB6F;border-color:#93d651;color:#0e1b06}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:99px;padding:3px 10px;font-size:13px;font-weight:600;background:var(--sunk);white-space:nowrap}
+.chip.pos{background:#F3E63F;border-color:#d9cc2c;color:#1b1606}.chip.neg{background:#FF6F6F;border-color:#e35a5a;color:#1b0606}
+.chip.bozza{color:var(--warn);border-color:currentColor;background:none}.chip.completa{color:var(--ok);border-color:currentColor;background:none}
+.chip.warn{color:var(--warn);border-color:currentColor;background:none}
+/* trincee */
+.trs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:14px}
+.tr{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);display:flex;flex-direction:column;min-width:0}
+.tr-h{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.tr-h b{font-family:var(--f-display);font-size:22px;letter-spacing:.03em}
+.tr-h .bar3{width:14px;height:30px;border-radius:3px;background:linear-gradient(var(--accent-2) 0 33%,#D9B26F 33% 66%,var(--accent) 66%)}
+.sz{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px dashed var(--line);cursor:pointer;background:none;border-left:0;border-right:0;border-top:0;border-radius:0;width:100%;text-align:left;min-height:52px;font-weight:400}
+.sz:hover{background:var(--sunk)}
+.sz .n{font-family:var(--f-display);font-weight:700;font-size:17px;min-width:64px}
+.sz .seq{font-family:var(--f-mono);font-size:13px;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sz .tot{font-family:var(--f-mono);font-size:13px}
+.tr-f{padding:10px 14px;display:flex;gap:8px;flex-wrap:wrap}
+/* sezione */
+.strati{display:flex;flex-direction:column;gap:6px}
+.strato{display:grid;grid-template-columns:30px 112px 84px minmax(0,1fr) 40px;gap:6px;align-items:center}
+.strato .mv{display:flex;flex-direction:column;gap:2px}
+.strato .mv button{min-height:20px;padding:0 4px;font-size:10px;line-height:1;border-radius:5px}
+.strato .num{font-family:var(--f-mono);text-align:right}
+.strato .x{padding:0;width:40px;justify-content:center;color:var(--muted)}
+.shdr{display:grid;grid-template-columns:30px 112px 84px minmax(0,1fr) 40px;gap:6px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+@media (max-width:560px){.strato{grid-template-columns:30px 1fr 1fr 40px}.strato .d{grid-column:2 / 4}.shdr{display:none}}
+.uscell{display:flex;min-width:0}.uscell input{border-top-right-radius:0;border-bottom-right-radius:0;font-family:var(--f-mono);font-weight:600}
+.uscell .pk{border-left:0;border-top-left-radius:0;border-bottom-left-radius:0;padding:0 9px;min-width:36px;justify-content:center;color:var(--muted);background:var(--sunk)}
+.uscell .pk[aria-expanded="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.usPick{display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:var(--sunk);border:1px solid var(--line);border-radius:var(--r)}
+table.us.mini{min-width:520px;font-size:14px}
+.sheet{background-color:var(--sunk);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:18px 18px;border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;justify-content:center;min-width:0}
+.sheet canvas{width:100%;max-width:760px;height:auto;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.18);display:block}
+.dprev{display:flex;flex-wrap:wrap;gap:6px;font-family:var(--f-mono);font-size:13px}
+.dprev span{border:1px solid var(--line);border-radius:6px;padding:3px 8px;background:var(--sunk)}
+.dprev span.k{border-color:var(--accent);color:var(--accent)}
+.dprev span.bad{border-color:var(--err);color:var(--err)}
+.uslinks{display:flex;flex-wrap:wrap;gap:6px}
+/* US */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table.us{border-collapse:collapse;width:100%;min-width:720px;font-size:15px}
+.us th{font-family:var(--f-display);font-weight:600;font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;background:var(--sunk);border-bottom:1px solid var(--line);padding:8px 10px;white-space:nowrap}
+.us td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:top}
+.us tr{cursor:pointer}
+.us tr:hover td{background:var(--sunk)}
+.us td.n{font-family:var(--f-mono);font-weight:600;font-size:17px;white-space:nowrap}
+.us td.rel{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.sec>summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;align-items:center;gap:10px}
+.sec>summary::-webkit-details-marker{display:none}
+.sec>summary::after{content:"+";margin-left:auto;font-family:var(--f-mono);color:var(--muted)}
+.sec[open]>summary::after{content:"–"}
+.sec .grid12{padding:2px 14px 16px}
+.bignum{font-family:var(--f-mono);font-size:40px;font-weight:600;line-height:1}
+.derived{background:var(--sunk);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-size:15px}
+.derived ul{margin:0;padding-left:18px}
+.relgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;padding:2px 14px 16px}
+@media (max-width:520px){.relgrid{grid-template-columns:1fr}}
+.relgrid input{font-family:var(--f-mono)}
+.confirm{display:flex;flex-wrap:wrap;gap:8px;align-items:center;border:1px solid var(--err);border-radius:var(--r);padding:8px 12px}
+.note{font-size:14px;color:var(--muted)}
+.msg{font-size:14px;min-height:1.2em}
+.msg.err{color:var(--err)}
+.login{max-width:520px;margin:24px auto}
+.qrow{display:grid;grid-template-columns:24px minmax(110px,180px) minmax(0,1fr);gap:4px 10px;align-items:center;padding:4px 0;border-bottom:1px dashed var(--line)}
+.qrow input[type=checkbox]{width:20px;min-height:20px}.qrow .ql{font-weight:600;font-size:14px}.qrow .qc{grid-column:3;font-size:13px;color:var(--muted)}
+@media (max-width:560px){.qrow{grid-template-columns:24px 1fr}.qrow .qv,.qrow .qc{grid-column:2}}
+.fotos{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:10px}
+.foto{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;gap:6px;background:var(--sunk)}
+.dprev span.wrn{border-color:var(--warn);color:var(--warn)}
+.ver-img{align-items:flex-start;max-height:calc(100vh - 140px);overflow:auto;position:sticky;top:120px;cursor:zoom-in}
+@media (max-width:980px){.ver-img{position:static;max-height:none}}.ver-img img{width:100%;height:auto;display:block}
+.ov{position:fixed;inset:0;z-index:50;background:rgba(10,14,25,.92);display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+.ov-bar{display:flex;gap:8px;align-items:center;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));color:#fff}
+.ov-img{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}.ov-img img{width:100%;height:auto;display:block}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:r .8s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes r{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+#ver{position:fixed;right:8px;bottom:calc(4px + env(safe-area-inset-bottom,0px));font-size:10px;opacity:.45;pointer-events:none}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="bar">
+      <div class="brand">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="7" fill="#fff"/><rect x="7" y="6" width="18" height="6" fill="#C2622D"/><rect x="7" y="12" width="18" height="7" fill="#D9B26F"/><rect x="7" y="19" width="18" height="7" fill="#1F3A8A"/><path d="M7 6v20M25 6v20" stroke="#141B2D" stroke-width="1.6" stroke-dasharray="4 1.6 1 1.6"/><path d="M5 6h22" stroke="#141B2D" stroke-width="1.6"/></svg>
+        Taccuino sondaggi
+      </div>
+      <div class="scavo-pick"><select id="scavoSel" aria-label="Scavo attivo"></select></div>
+      <span id="sync" class="pill">Avvio…</span>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Sezioni dell'app" id="tabs">
+      <button role="tab" data-tab="trincee">Trincee<span class="count" id="cTr">0</span></button>
+      <button role="tab" data-tab="us">US<span class="count" id="cUs">0</span></button>
+      <button role="tab" data-tab="esporta">Esporta</button>
+      <button role="tab" data-tab="scavo">Scavo</button>
+    </nav>
+  </div>
+</header>
+<main class="wrap" id="main"></main>
+<div id="toast" class="toast" hidden role="status"></div>
+<div id="ver"></div>
+
+<script src="iccd.js"></script>
+<script>
+"use strict";
+/* ============================================================ base */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const num=v=>{const n=parseFloat(String(v??'').replace(',','.'));return isFinite(n)?n:0};
+const nat=(a,b)=>String(a??'').localeCompare(String(b??''),'it',{numeric:true});
+const today=()=>new Date().toISOString().slice(0,10);
+const hashStr=t=>{let h=5381;for(let i=0;i<t.length;i++)h=((h<<5)+h+t.charCodeAt(i))>>>0;return h.toString(36)};
+let toastT;function toast(t,ms=3200){const e=$('#toast');e.textContent=t;e.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>e.hidden=true,ms)}
+const ls={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){toast('Memoria del dispositivo piena: esporta un backup.')}}};
+const STANDALONE=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+
+/* ============================================================ archivio (Apps Script) */
+let API=ls.get('ts-api',{})||{};
+try{const q=new URLSearchParams(location.search).get('archivio');if(q&&q!==API.url){API={url:q};ls.set('ts-api',API)}}catch(e){}
+if(!API.url&&window.TS_ARCHIVIO){API={url:window.TS_ARCHIVIO};ls.set('ts-api',API)}
+const err=(m,code)=>Object.assign(new Error(m),{code});
+async function api(action,payload={}){
+  if(!API.url)throw err('Archivio non impostato','no_url');
+  let r;try{r=await fetch(API.url,{method:'POST',body:JSON.stringify({action,token:API.token,...payload})})}catch(e){throw err('Nessuna connessione con l’archivio','offline')}
+  let j;try{j=await r.json()}catch(e){throw err('Risposta non valida dall’archivio: controlla l’indirizzo','bad')}
+  if(j.error){if(j.code==='unauthenticated'&&action!=='login'){API.token=null;ls.set('ts-api',API);toast('Accesso scaduto: entra di nuovo.');setTimeout(()=>location.reload(),1800)}throw err(j.error,j.code)}
+  return j;
+}
+const me=()=>API.user||{};
+const canEditScavo=()=>['responsabile','socio'].includes(me().ruolo);
+
+/* ============================================================ dati locali + sincronizzazione */
+const DKEY=()=>'ts-data-'+hashStr(API.url||'locale');
+let S={docs:{},outbox:[],since:0,cur:null,tab:'trincee',view:null,openSez:null,openUs:null,fmt:'png',lastSync:0,syncErr:''};
+function loadLocal(){const d=ls.get(DKEY(),null);if(d){S.docs=d.docs||{};S.outbox=d.outbox||[];S.since=d.since||0;S.cur=d.cur||null;S.tab=d.tab||'trincee';S.fmt=d.fmt||'png'}}
+let saveT;function persist(){clearTimeout(saveT);saveT=setTimeout(()=>ls.set(DKEY(),{docs:S.docs,outbox:S.outbox,since:S.since,cur:S.cur,tab:S.tab,fmt:S.fmt}),150)}
+function put(path,data){const d=JSON.parse(JSON.stringify(data));d.updated=Date.now();d.by=me().username||'';S.docs[path]=d;
+  S.outbox=S.outbox.filter(o=>o.path!==path);S.outbox.push({path,data:d});persist();kick();renderSync();return d}
+function remove(path){delete S.docs[path];S.outbox=S.outbox.filter(o=>o.path!==path);S.outbox.push({path,del:true});persist();kick();renderSync()}
+const coll=name=>Object.entries(S.docs).filter(([p])=>p.startsWith(name+'/')).map(([p,d])=>({...d,id:p.slice(name.length+1)}));
+let syncing=false,kickT;
+function kick(){clearTimeout(kickT);kickT=setTimeout(sync,800)}
+async function sync(){
+  if(syncing||!API.token)return;if(!navigator.onLine){renderSync();return}
+  syncing=true;renderSync();
+  try{
+    if(S.outbox.length){const ops=S.outbox.slice();const j=await api('push',{ops});
+      S.outbox=S.outbox.filter(o=>!ops.includes(o));
+      if(j.refused&&j.refused.length)toast('Alcune modifiche non sono permesse al tuo ruolo: '+j.refused.join(', '),6000)}
+    const j=await api('pull',{since:S.since});
+    const pending=new Set(S.outbox.map(o=>o.path));let changed=false;
+    (j.docs||[]).forEach(d=>{if(pending.has(d.path))return;
+      if(d.deleted||!d.data){if(S.docs[d.path]){delete S.docs[d.path];changed=true}}
+      else if(JSON.stringify(S.docs[d.path])!==JSON.stringify(d.data)){S.docs[d.path]=d.data;changed=true}});
+    if(j.user){API.user=j.user;API.ai=!!j.ai;ls.set('ts-api',API)}
+    S.since=Math.max(0,(j.now||Date.now())-10000);S.lastSync=Date.now();S.syncErr='';persist();
+    if(changed)softRender();
+  }catch(e){S.syncErr=e.code==='offline'?'':e.message}
+  finally{syncing=false;renderSync();processFoto()}
+}
+function renderSync(){
+  const p=$('#sync');if(!p)return;const n=S.outbox.length;
+  if(!API.token){p.className='pill';p.textContent='Non collegato';return}
+  if(!navigator.onLine){p.className='pill warn';p.textContent=n?`Offline · ${n} modific${n===1?'a':'he'} salvat${n===1?'a':'e'} qui`:'Offline';return}
+  if(S.syncErr){p.className='pill err';p.textContent='Errore archivio';p.title=S.syncErr;return}
+  if(syncing||n){p.className='pill warn';p.textContent=n?`Invio di ${n} modific${n===1?'a':'he'}…`:'Aggiorno…';return}
+  p.className='pill ok';p.textContent='Sincronizzato';p.title='';
+}
+setInterval(sync,15000);addEventListener('online',()=>{renderSync();sync()});addEventListener('offline',renderSync);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});
+
+/* ============================================================ modello */
+const scavi=()=>coll('scavi').sort((a,b)=>nat(scavoName(a),scavoName(b)));
+const curScavo=()=>{const s=S.docs['scavi/'+S.cur];return s?{...s,id:S.cur}:null};
+const scavoName=s=>[s.localita,s.cantiere].filter(Boolean).join(' – ')||'Scavo senza nome';
+const trinceeOf=sc=>coll('trincee').filter(t=>t.scavo===sc).sort((a,b)=>nat(a.tipo,b.tipo)||nat(a.numero,b.numero));
+const sezioniOf=tr=>coll('sezioni').filter(s=>s.trincea===tr).sort((a,b)=>nat(a.numero,b.numero));
+const sezioniScavo=sc=>coll('sezioni').filter(s=>s.scavo===sc);
+const usOf=sc=>coll('us').filter(u=>u.scavo===sc).sort((a,b)=>numSort(a.numero,b.numero));
+const findUs=(sc,n)=>{n=normNum(n);return usOf(sc).find(u=>normNum(u.numero)===n)};
+const trLabel=t=>t?`${t.tipo||'TRINCEA'} ${t.numero||'?'}`.toUpperCase():'';
+const trShort=t=>t?(t.tipo==='TRINCEA'||!t.tipo?'Tr. ':t.tipo==='SONDAGGIO'?'Sond. ':t.tipo==='SAGGIO'?'Sagg. ':t.tipo+' ')+(t.numero||'?'):'';
+const sezTitle=s=>{const t=S.docs['trincee/'+s.trincea];return trLabel(t)+(s.numero?', SEZIONE '+s.numero:'')};
+const sezFileName=s=>sezTitle(s).replace(', ',' - ');
+const sezTot=s=>(s.strati||[]).reduce((a,b)=>a+num(b.cm),0)/100;
+const intest=sc=>[sc?.intest1||[sc?.localita,sc?.anno].filter(Boolean).join(' ').toUpperCase(),sc?.intest2||sc?.cantiere||''];
+
+/* dove compare una US nelle sezioni, e i rapporti che ne derivano */
+function usInSezioni(sc,n){
+  n=normNum(n);const out=[];
+  sezioniScavo(sc).forEach(s=>{const st=s.strati||[];st.forEach((x,i)=>{if(normNum(x.us)!==n)return;
+    out.push({sez:s,tr:S.docs['trincee/'+s.trincea],cm:x.cm,sopra:i>0?normNum(st[i-1].us):'',sotto:i<st.length-1?normNum(st[i+1].us):''})})});
+  return out.sort((a,b)=>nat(trLabel(a.tr),trLabel(b.tr))||nat(a.sez.numero,b.sez.numero));
+}
+/* trincee in cui compare una US, in forma compatta: «Trincea 4», «Trincee 1-7», «Tr. 1, 2, 3, 6, 8», «Tutte le trincee» */
+function trCompact(sc,trIds){
+  const all=trinceeOf(sc),sel=all.filter(t=>trIds.has(t.id));if(!sel.length)return'';
+  if(sel.length===all.length&&all.length>1&&all.every(t=>(t.tipo||'TRINCEA')==='TRINCEA'))return'Tutte le trincee';
+  const W={TRINCEA:['Trincea','Trincee','Tr.'],SONDAGGIO:['Sondaggio','Sondaggi','Sond.'],SAGGIO:['Saggio','Saggi','Sagg.']};
+  const byT={};sel.forEach(t=>{const k=t.tipo||'TRINCEA';(byT[k]=byT[k]||[]).push(t.numero)});
+  return Object.entries(byT).map(([k,ns])=>{const w=W[k]||[k,k,k];ns=[...new Set(ns.map(String))].sort(numSort);
+    if(ns.length===1)return w[0]+' '+ns[0];
+    const ints=ns.map(Number);const run=ints.every((v,i)=>Number.isInteger(v)&&(i===0||v===ints[i-1]+1));
+    if(run&&ns.length>=3)return w[1]+' '+ns[0]+'-'+ns[ns.length-1];
+    return w[2]+' '+ns.join(', ')}).join('; ');
+}
+function derivedOf(sc,n){
+  const w=usInSezioni(sc,n),copre=new Set(),coperto=new Set(),cms=[];
+  w.forEach(x=>{if(x.sotto&&x.sotto!==normNum(n))copre.add(x.sotto);if(x.sopra&&x.sopra!==normNum(n))coperto.add(x.sopra);if(num(x.cm))cms.push(num(x.cm))});
+  const trs=[...new Set(w.map(x=>trShort(x.tr)))];
+  const sezs=w.map(x=>trShort(x.tr)+(x.sez.numero?' sez. '+x.sez.numero:'')+(num(x.cm)?` (${x.cm} cm)`:''));
+  const mis=cms.length?(Math.min(...cms)===Math.max(...cms)?`spessore ${Math.min(...cms)} cm`:`spessore ${Math.min(...cms)}–${Math.max(...cms)} cm`):'';
+  return{w,copre:[...copre].sort(numSort),copertoda:[...coperto].sort(numSort),saggio:trCompact(sc,new Set(w.map(x=>x.sez.trincea))),sezDet:[...new Set(sezs)].join('; '),misure:mis};
+}
+function setRel(r,k,arr){
+  const sc=r.scavo,old=(r.rel&&r.rel[k])||[];arr=parseNums(arr).filter(n=>n!==normNum(r.numero));
+  r.rel={...(r.rel||{}),[k]:arr};const inv=RELINV[k];
+  arr.filter(n=>!old.includes(n)).forEach(n=>{const t=findUs(sc,n);if(t&&t.id!==r.id){const a=(t.rel&&t.rel[inv])||[];if(!a.includes(normNum(r.numero))){t.rel={...(t.rel||{}),[inv]:[...a,normNum(r.numero)]};saveUs(t)}}});
+  old.filter(n=>!arr.includes(n)).forEach(n=>{const t=findUs(sc,n);if(t&&t.id!==r.id){const a=(t.rel&&t.rel[inv])||[];if(a.includes(normNum(r.numero))){t.rel={...t.rel,[inv]:a.filter(x=>x!==normNum(r.numero))};saveUs(t)}}});
+}
+function saveUs(r){const {id,...d}=r;put('us/'+id,d)}
+function newUsRec(sc,n,extra={}){
+  const id=uid('u');const r={scavo:sc,numero:normNum(n),segno:'positiva',rel:{},stato:'bozza',responsabile:me().nome||'',data:today(),...extra};
+  put('us/'+id,r);return{...r,id};
+}
+/* per ogni US: le trincee in cui compare (per menu e filtri anche con centinaia di US) */
+function usTrMap(sc){const m={};sezioniScavo(sc).forEach(s=>(s.strati||[]).forEach(x=>{const n=normNum(x.us);if(!n)return;(m[n]=m[n]||new Set()).add(s.trincea)}));return m}
+const usLabel=u=>`<b class="mono">US ${esc(u.numero)}</b>${u.breve?' · '+esc(u.breve):u.definizione?' · '+esc(u.definizione):''}`;
+const usBreve=(sc,n)=>{const u=findUs(sc,n);return u&&u.breve||''};
+/* la descrizione detta per uno strato diventa la descrizione breve della US (se non ne ha già una) */
+function takeStrati(sc,strati){return(strati||[]).map(x=>{const u=ensureUs(sc,x.us);if(u&&x.descr&&!u.breve){u.breve=x.descr;saveUs(u)}return{us:x.us,cm:x.cm}})}
+function ensureUs(sc,n){if(!normNum(n))return null;return findUs(sc,n)||newUsRec(sc,n)}
+/* aggiunge "copre / coperto da" ricavati dalle sezioni; restituisce quanti rapporti ha aggiunto */
+function applySezRels(sc,nums){
+  let added=0;const all=nums||[...new Set(sezioniScavo(sc).flatMap(s=>(s.strati||[]).map(x=>normNum(x.us)).filter(Boolean)))];
+  all.forEach(n=>ensureUs(sc,n));
+  all.forEach(n=>{const r=findUs(sc,n);if(!r)return;const d=derivedOf(sc,n);
+    ['copre','copertoda'].forEach(k=>{const cur=(r.rel&&r.rel[k])||[];const miss=d[k].filter(x=>!cur.includes(x));if(miss.length){added+=miss.length;setRel(r,k,[...cur,...miss]);saveUs(r)}})});
+  return added;
+}
+const nextUsNum=sc=>{const ns=usOf(sc).map(u=>parseInt(u.numero,10)).filter(n=>!isNaN(n));return String(ns.length?Math.max(...ns)+1:1)};
+
+/* voci suggerite: predefinite + quelle già usate nello scavo */
+const VOCI={
+  definizione:['strato','riempimento','taglio','interfaccia','piano d\'uso','crollo','livellamento','buca','fossa','deposito naturale','deposito alluvionale','suolo','arativo','suolo attivo superficiale'],
+  geologici:['argilla','limo','sabbia','sabbia fine','ghiaia','ghiaino','ciottoli','calcinelli','concrezioni calcaree','noduli ferro-manganesiferi','screziature'],
+  organici:['carboni','frustoli carboniosi','radici','resti vegetali','ossa animali','malacofauna','frustoli organici'],
+  artificiali:['frammenti di laterizi','frammenti ceramici','malta','intonaco','scorie','frammenti di vetro','frammenti di coppi'],
+  colore:['bruno','bruno scuro','bruno chiaro','marrone','marrone chiaro','marrone scuro','grigio','grigio chiaro','grigio scuro','grigio-verde','giallastro','beige','beige chiaro','nerastro','rossastro','ocra'],
+  consistenza:['compatta','molto compatta','mediamente compatta','friabile','sciolta','plastica','tenace'],
+  elementiDatanti:['ceramica','monete','vetro','nessuno'],
+  conservazione:['buono','discreto','cattivo'],
+  formazione:['naturale','artificiale','alluvionale','colluviale','antropico']};
+function vociFor(k,sc){const s=new Set(VOCI[k]||[]);usOf(sc).forEach(u=>tk(u[k]).forEach(v=>s.add(v)));return [...s].sort((a,b)=>a.localeCompare(b,'it'))}
+
+/* ============================================================ disegno della sezione (stessa impaginazione dei disegni Rhino) */
+/* caratteri del disegno: Century Gothic dove c'è (PC con Office), altrimenti Jost, molto simile */
+const SF="'Century Gothic','CenturyGothic','Jost','AppleGothic',sans-serif";
+let fontsP=null;const fontsReady=()=>fontsP||(fontsP=Promise.all([document.fonts.load('bold 40px '+SF),document.fonts.load('40px '+SF)]).catch(()=>{}));
+const G={L:3.0,fx0:-0.40,fx1:3.40,fTop:0.664,fBot:0.24,titleBase:[0.436,0.316,0.198],titleEm:0.1,usEmMax:0.15,usEmMin:0.055,boldMin:0.08,leadEm:0.085,numEm:0.08,interl:0.115,
+  qSx:-0.205,qSxExt:-0.305,qDx:3.205,qDxExt:3.30,dot:0.0235,lw:0.0025,dash:[0.115,0.03,0.006,0.03],PXM:300/25.4*1000/15};
+function sezSize(s,k){return{w:Math.round((G.fx1-G.fx0)*k),h:Math.round((G.fTop+Math.max(sezTot(s),0.3)+G.fBot)*k)}}
+function drawSez(ctx,s,k,preview){
+  const sc=S.docs['scavi/'+s.scavo],[r1,r2]=intest(sc);
+  const T=Math.max(sezTot(s),0.3),X=x=>(x-G.fx0)*k,Y=y=>(G.fTop-y)*k,sz=sezSize(s,k),lw=preview?Math.max(G.lw*k,1):G.lw*k;
+  const BLUE='#0000c8',RED='#ff0000',INK='#000';
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,sz.w,sz.h);ctx.lineCap='butt';
+  const line=(x1,y1,x2,y2,c,dash)=>{ctx.beginPath();ctx.strokeStyle=c;ctx.lineWidth=lw;ctx.setLineDash(dash?G.dash.map(d=>d*k):[]);ctx.moveTo(X(x1),Y(y1));ctx.lineTo(X(x2),Y(y2));ctx.stroke();ctx.setLineDash([])};
+  const dot=(x,y,c)=>{ctx.beginPath();ctx.fillStyle=c;ctx.arc(X(x),Y(y),G.dot*k,0,Math.PI*2);ctx.fill()};
+  const text=(t,x,yc,em,c,bold)=>{ctx.font=(bold?'bold ':'')+(em*k)+'px '+SF;ctx.fillStyle=c;ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(t,X(x),Y(yc)+0.358*em*k)};
+  ctx.strokeStyle=INK;ctx.lineWidth=lw;ctx.strokeRect(lw/2,lw/2,sz.w-lw,sz.h-lw);
+  ctx.font='bold '+(G.titleEm*k)+'px '+SF;ctx.fillStyle=INK;ctx.textAlign='left';ctx.textBaseline='alphabetic';
+  [r1,r2,sezTitle(s)].forEach((t,i)=>{if(t)ctx.fillText(t,X(0),Y(G.titleBase[i]))});
+  line(0,0,G.L,0,INK);line(0,0,0,-T,INK,true);line(G.L,0,G.L,-T,INK,true);line(0,-T,G.L,-T,INK,true);
+  line(G.L,0,G.qDxExt,0,RED);line(G.L,-T,G.qDxExt,-T,RED);line(G.qDx,0,G.qDx,-T,RED);dot(G.qDx,0,RED);dot(G.qDx,-T,RED);
+  text(T.toFixed(2),G.qDx,-T/2,G.numEm,RED);
+  line(G.qSxExt,0,0,0,BLUE);dot(G.qSx,0,BLUE);
+  let y=0,thin=0;const st=s.strati||[],thinDims=[];
+  st.forEach((x,i)=>{const sp=num(x.cm)/100,yb=y-sp,mid=(y+yb)/2;
+    if(i<st.length-1)line(0,yb,G.L,yb,INK);
+    line(G.qSxExt,yb,0,yb,BLUE);line(G.qSx,y,G.qSx,yb,BLUE);dot(G.qSx,yb,BLUE);
+    if(sp>=G.numEm*1.25)text(sp.toFixed(2),G.qSx,mid,G.numEm,BLUE);else thinDims.push({i,mid,t:sp.toFixed(2)});
+    const n=normNum(x.us);
+    if(n){const kind=(findUs(s.scavo,x.us)||{}).segno,house=kind==='struttura';
+      const xc=kind==='negativa'?G.L-0.42:G.L/2;                 /* i tagli: numero di fianco, sul lato destro */
+      const em=Math.min(G.usEmMax,(sp-0.04)/(house?1.95:1.5));
+      if(em>=G.usEmMin)usShape(ctx,k,lw,X(xc),Y(mid),em,n,kind,em>=G.boldMin);
+      else{ /* strato sottile: numero fuori, con linea di rimando */
+        thin++;let dy=kind==='negativa'?-0.2:(thin%2?1:-1)*0.2;if(mid+dy>-0.08||mid+dy<-T+0.08)dy=-dy;if(mid+dy>-0.08)dy=-0.08-mid;if(mid+dy<-T+0.08)dy=-T+0.08-mid;
+        const ax=kind==='negativa'?G.L-0.3:G.L/2-0.35,lx=kind==='negativa'?Math.min(ax+0.3,G.L-0.17):ax-0.42,ly=mid+dy;
+        const box=usShape(ctx,k,lw,X(lx),Y(ly),G.leadEm,n,kind,true);
+        ctx.beginPath();ctx.strokeStyle=INK;ctx.lineWidth=lw;ctx.moveTo(X(ax),Y(mid));ctx.lineTo(X(lx)+(lx<ax?box.w/2:-box.w/2),Y(ly));ctx.stroke();
+        ctx.beginPath();ctx.fillStyle=INK;ctx.arc(X(ax),Y(mid),Math.max(0.009*k,lw*1.5),0,Math.PI*2);ctx.fill()}}
+    y=yb});
+  /* quote di strati sottili: scritte a sinistra della linea, distanziate, con un breve rimando */
+  if(thinDims.length){const groups=[];thinDims.forEach(d=>{const g=groups[groups.length-1];if(g&&g[g.length-1].i===d.i-1)g.push(d);else groups.push([d])});
+    groups.forEach(g=>{const c=g.reduce((a,d)=>a+d.mid,0)/g.length,step=0.075;
+      g.forEach((d,j)=>{let ly=c+((g.length-1)/2-j)*step;ly=Math.min(-0.04,Math.max(-T+0.04,ly));
+        line(G.qSx,d.mid,G.qSx-0.04,ly,BLUE);text(d.t,G.qSx-0.115,ly,G.numEm*0.8,BLUE)})})}
+  [0,G.L].forEach(x=>{line(x,0.15,x,-0.145,RED);ctx.strokeStyle=BLUE;ctx.lineWidth=lw;ctx.strokeRect(X(x-0.05),Y(0.05),0.1*k,0.1*k)});
+}
+/* numero della US dentro la sua figura: ellisse = positiva, rettangolo = taglio, casetta = struttura */
+/* numero della US dentro la sua figura: ellisse = positiva, rettangolo = taglio, casetta = struttura. Restituisce l'ingombro */
+function usShape(ctx,k,lw,cx,cy,em,lab,kind,bold){
+  const house=kind==='struttura';
+  ctx.font=(bold?'bold ':'')+(em*k)+'px '+SF;const tw=ctx.measureText(lab).width,cap=0.72*em*k,h=cap+0.75*em*k;
+  if(house)cy+=h*0.55/2; /* la casetta intera resta centrata */
+  ctx.fillStyle='#000';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(lab,cx,cy+cap/2);
+  ctx.strokeStyle='#000';ctx.lineWidth=lw;ctx.setLineDash([]);ctx.beginPath();let w;
+  if(kind==='negativa'){w=tw+0.7*em*k;ctx.rect(cx-w/2,cy-h/2,w,h)}
+  else if(house){w=tw+0.8*em*k;const roof=h*0.55,top=cy-h/2,bot=cy+h/2;
+    ctx.moveTo(cx-w/2,bot);ctx.lineTo(cx+w/2,bot);ctx.lineTo(cx+w/2,top);ctx.lineTo(cx,top-roof);ctx.lineTo(cx-w/2,top);ctx.closePath()}
+  else{w=tw+1.15*em*k;ctx.ellipse(cx,cy,w/2,h/2,0,0,Math.PI*2)}
+  ctx.stroke();return{w,h};
+}
+function wrapW(ctx,t,maxw){const out=[];let r='';String(t).split(/\s+/).forEach(p=>{const c=r?r+' '+p:p;if(r&&ctx.measureText(c).width>maxw){out.push(r);r=p}else r=c});if(r)out.push(r);return out}
+function sezCanvas(s,k){const sz=sezSize(s,k),c=document.createElement('canvas');c.width=sz.w;c.height=sz.h;drawSez(c.getContext('2d'),s,k,false);return c}
+function previewSez(s){const cv=$('#cv');if(!cv)return;const cssW=Math.min(cv.parentNode.clientWidth-28,760)||600,dpr=devicePixelRatio||1,k=cssW/(G.fx1-G.fx0)*dpr,sz=sezSize(s,k);cv.width=sz.w;cv.height=sz.h;drawSez(cv.getContext('2d'),s,k,true)}
+
+/* ============================================================ dettatura */
+const NUMW={zero:0,un:1,uno:1,una:1,due:2,tre:3,'tré':3,quattro:4,cinque:5,sei:6,sette:7,otto:8,nove:9,dieci:10,undici:11,dodici:12,tredici:13,quattordici:14,quindici:15,sedici:16,diciassette:17,diciotto:18,diciannove:19};
+const DECW={venti:20,trenta:30,quaranta:40,cinquanta:50,sessanta:60,settanta:70,ottanta:80,novanta:90};
+function parolaNum(w){let n=0,s=w;
+  if(/^cento/.test(s)){n=100;s=s.slice(5);if(!s)return 100}
+  else{const m=s.match(/^(due|tre|quattro|cinque|sei|sette|otto|nove)cento/);if(m){n=NUMW[m[1]]*100;s=s.slice(m[0].length);if(!s)return n}}
+  if(s in NUMW)return n+NUMW[s];
+  for(const d in DECW){const r=d.slice(0,-1);if(s===d)return n+DECW[d];
+    if(s.indexOf(d)===0||s.indexOf(r)===0){const rest=s.indexOf(d)===0?s.slice(d.length):s.slice(r.length);
+      if(rest in NUMW&&NUMW[rest]<10)return n+DECW[d]+NUMW[rest];if(s.indexOf(r)===0&&(rest==='uno'||rest==='otto'))return n+DECW[d]+NUMW[rest]}}
+  return null}
+function interpretaDettato(testo){
+  let t=' '+String(testo||'').toLowerCase().replace(/[’']/g,' ')+' ';
+  t=t.replace(/[a-zàèéìòù]+/g,w=>{const n=parolaNum(w);return n==null||w==='un'||w==='una'?w:String(n)});
+  t=t.replace(/(\d)\s*,\s*(\d)/g,'$1.$2');
+  t=t.replace(/\bunit[aà]\s+stratigrafic[ah]e?\b|\bu\.?\s?s\.?(?=\s|\d|$)|\busa\b|\buso\b|\bu\s+esse\b|\bus\b/g,' US ');
+  const out={tipo:null,trincea:null,sezione:null,strati:[],avvisi:[]};
+  const h=t.match(/\b(trincea|sondaggio|saggio|settore)\s*(?:numero|n\.?)?\s*(\d+[a-z]?)\b/);if(h){out.tipo=h[1].toUpperCase();out.trincea=h[2]}
+  const sz=t.match(/\bsezione\s*(?:numero|n\.?)?\s*(\d+[a-z]?)\b/);if(sz)out.sezione=sz[1];
+  t.split(/\bUS\b/).slice(1).forEach(p=>{
+    const m=p.match(/^\s*(?:numero|n\.?)?\s*(\d+[a-z]?)\b(.*)$/);if(!m){out.avvisi.push('Numero di US non capito in: “US'+p.trim().slice(0,30)+'”');return}
+    let us=m[1],r=m[2],cm=null,descr='';
+    const dm=r.match(/\bdescrizione\b\s*[:,]?\s*(.*)$/);if(dm){descr=dm[1];r=r.slice(0,dm.index)}
+    const mc=r.match(/(\d+(?:\.\d+)?)\s*metr[oi]\s*e\s*(\d+)/);
+    if(mc)cm=parseFloat(mc[1])*100+parseFloat(mc[2]);
+    else{const mm=r.match(/(\d+(?:\.\d+)?)\s*(centimetri|centimetro|cm|metri|metro|mt|m)?\b/);if(mm){const v=parseFloat(mm[1]),u=mm[2]||'';cm=/^m|^mt/.test(u)?v*100:(!u&&v<5&&mm[1].includes('.')?v*100:v)}}
+    if(cm==null)out.avvisi.push('Manca lo spessore della US '+us);
+    descr=descr.replace(/\s+/g,' ').replace(/[\s,;.\-–]+$/,'').trim();if(descr)descr=descr[0].toUpperCase()+descr.slice(1);
+    out.strati.push({us:us.toUpperCase(),cm:cm==null?'':String(Math.round(cm*10)/10),descr})});
+  return out;
+}
+function dettPreview(r){
+  const a=[];if(r.tipo)a.push(`<span class="k">${esc(r.tipo+' '+r.trincea+(r.sezione?' · Sez. '+r.sezione:''))}</span>`);
+  let tt=0;r.strati.forEach(s=>{tt+=num(s.cm);a.push(`<span class="${s.cm===''?'bad':''}">${esc('US '+s.us+' · '+(s.cm===''?'?':s.cm+' cm')+(s.descr?' · '+s.descr:''))}</span>`)});
+  if(r.strati.length)a.push(`<span class="k">Totale ${(tt/100).toFixed(2)} m</span>`);
+  r.avvisi.forEach(x=>a.push(`<span class="bad">${esc(x)}</span>`));return a.join('');
+}
+
+/* ============================================================ file: PNG/JPG a 300 dpi, PDF, ZIP */
+const CRC=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xedb88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+const crc=b=>{let c=0xffffffff;for(let i=0;i<b.length;i++)c=CRC[(c^b[i])&255]^(c>>>8);return(c^0xffffffff)>>>0};
+const blobOf=(c,type,q)=>new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('immagine')),type,q));
+async function sezPng(s){await fontsReady();const b=new Uint8Array(await (await blobOf(sezCanvas(s,G.PXM),'image/png')).arrayBuffer());
+  const ppm=Math.round(300/0.0254),ch=new Uint8Array(21),dv=new DataView(ch.buffer);dv.setUint32(0,9);ch.set([112,72,89,115],4);dv.setUint32(8,ppm);dv.setUint32(12,ppm);ch[16]=1;dv.setUint32(17,crc(ch.subarray(4,17)));
+  const out=new Uint8Array(b.length+21);out.set(b.subarray(0,33));out.set(ch,33);out.set(b.subarray(33),54);return new Blob([out],{type:'image/png'})}
+async function sezJpg(s){await fontsReady();const b=new Uint8Array(await (await blobOf(sezCanvas(s,G.PXM),'image/jpeg',0.95)).arrayBuffer());
+  if(b[6]===74&&b[7]===70&&b[8]===73&&b[9]===70){b[13]=1;b[14]=1;b[15]=44;b[16]=1;b[17]=44}return new Blob([b],{type:'image/jpeg'})}
+const libs={};
+function loadLib(url,glob){if(window[glob])return Promise.resolve(window[glob]);if(libs[url])return libs[url];
+  libs[url]=new Promise((res,rej)=>{const s=document.createElement('script');s.src=url;s.onload=()=>res(window[glob]);s.onerror=()=>{delete libs[url];rej(err('La prima volta serve la connessione per preparare i PDF.','offline'))};document.head.append(s)});return libs[url]}
+const jsPdfLib=()=>loadLib('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js','jspdf');
+const zipLib=()=>loadLib('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js','JSZip');
+async function sezPdf(list){await fontsReady();const {jsPDF}=await jsPdfLib();let doc=null;
+  list.forEach(s=>{const c=sezCanvas(s,G.PXM),w=c.width/300*25.4,h=c.height/300*25.4,o=w>h?'l':'p';
+    if(!doc)doc=new jsPDF({unit:'mm',format:[w,h],orientation:o});else doc.addPage([w,h],o);doc.addImage(c.toDataURL('image/png'),'PNG',0,0,w,h,undefined,'FAST')});
+  return doc.output('blob')}
+async function sezFile(s,fmt){const n=sezFileName(s);if(fmt==='jpg')return[n+'.jpg',await sezJpg(s),'image/jpeg'];if(fmt==='pdf')return[n+'.pdf',await sezPdf([s]),'application/pdf'];return[n+'.png',await sezPng(s),'image/png']}
+/* schede US: stesso disegno ICCD del Taccuino di scavo */
+const pdfClean=t=>String(t).replace(/[’‘]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,'-').replace(/…/g,'...');
+function usForPdf(r){const d=derivedOf(r.scavo,r.numero);return{...r,tipo:r.segno==='struttura'?'USM':'US',saggio:r.saggio||d.saggio,misure:r.misure||d.misure}}
+function scHeader(sc){return{...sc,localita:sc.localita||'',identificativo:sc.identificativo||''}}
+async function schedePdf(recs,sc){
+  const {jsPDF}=await jsPdfLib();const pdf=new jsPDF({unit:'pt',format:'a4'});let first=true;
+  const D={page:()=>{if(!first)pdf.addPage();first=false},
+    rect:(x0,y0,x1,y1,col,fill)=>{if(fill){pdf.setFillColor(...col);pdf.rect(x0,y0,x1-x0,y1-y0,'F')}else{pdf.setLineWidth(0.6);pdf.setDrawColor(0,0,0);pdf.rect(x0,y0,x1-x0,y1-y0)}},
+    line:(a,b,c,d)=>{pdf.setLineWidth(0.6);pdf.setDrawColor(0,0,0);pdf.line(a,b,c,d)},
+    cross:(x0,y0,x1,y1)=>{pdf.setLineWidth(0.9);pdf.line(x0+1,y0+1,x1-1,y1-1);pdf.line(x1-1,y0+1,x0+1,y1-1)},
+    text:(t,x,y,o)=>{pdf.setFont('helvetica',o.bold?'bold':'normal');pdf.setFontSize(o.size);pdf.setTextColor(...(o.col||[0,0,0]));pdf.text(pdfClean(t),x,y,o.angle?{angle:o.angle}:{align:o.align||'left'});pdf.setTextColor(0,0,0)},
+    img:(k,x0,y0,x1,y1)=>{const u=LOGOS[k];if(u)pdf.addImage(u,u.startsWith('data:image/png')?'PNG':'JPEG',x0,y0,x1-x0,y1-y0,k,'FAST')},
+    measure:(t,size,bold)=>{pdf.setFont('helvetica',bold?'bold':'normal');return pdf.getStringUnitWidth(pdfClean(t))*size}};
+  recs.forEach(r=>drawSheet(sheetSpec(usForPdf(r),scHeader(sc),false),D));return pdf.output('blob');
+}
+const usPdfName=r=>`US ${String(r.numero||'').replace(/[\\/:*?"<>|#%]+/g,'-')||'senza numero'}.pdf`;
+async function offerFile(name,blob){
+  try{const f=new File([blob],name,{type:blob.type||'application/octet-stream'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})&&/iPhone|iPad|Android|Macintosh/i.test(navigator.userAgent)&&'ontouchend' in document){await navigator.share({files:[f],title:name});return}}
+  catch(e){if(e&&e.name==='AbortError')return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),60000);
+}
+const b64=async blob=>{const u8=new Uint8Array(await blob.arrayBuffer());let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s)};
+async function toDrive(sc,cartella,name,blob){
+  if(!navigator.onLine)throw err('Serve la connessione per salvare nella cartella dello scavo.','offline');
+  if(S.outbox.some(o=>o.path==='scavi/'+sc.id))await sync();
+  return api('saveFile',{scavo:sc.id,cartella,name,base64:await b64(blob),mime:blob.type||'application/octet-stream'});
+}
+
+/* ============================================================ interfaccia */
+function setTab(t){S.tab=t;S.view=null;persist();render();scrollTo(0,0)}
+function renderTabs(){
+  const sc=curScavo();
+  $$('#tabs button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===S.tab)));
+  $('#cTr').textContent=sc?trinceeOf(sc.id).length:0;$('#cUs').textContent=sc?usOf(sc.id).length:0;
+  const sel=$('#scavoSel'),list=scavi();
+  sel.innerHTML=list.length?list.map(s=>`<option value="${esc(s.id)}" ${s.id===S.cur?'selected':''}>${esc(scavoName(s))}${s.anno?' · '+esc(s.anno):''}</option>`).join(''):'<option>Nessuno scavo</option>';
+  sel.disabled=!list.length;
+}
+function render(){
+  if(!API.token){$('#tabs').hidden=true;$('#scavoSel').hidden=true;renderLogin();renderSync();return}
+  $('#tabs').hidden=false;$('#scavoSel').hidden=false;
+  if(!curScavo()){const l=scavi();S.cur=l.length?l[0].id:null}
+  renderTabs();
+  const m=$('#main');
+  if(!curScavo()&&S.tab!=='scavo'){m.innerHTML=`<div class="empty"><h2>Nessuno scavo</h2><p>${canEditScavo()?'Crea lo scavo con località e cantiere: trincee, sezioni e schede US si organizzano dentro lo scavo.':'Il responsabile non ha ancora creato uno scavo in questo archivio. Quando lo crea, lo trovi qui.'}</p>${canEditScavo()?'<button class="primary" data-act="goNuovoScavo">Crea lo scavo</button>':''}</div>`;return}
+  if(S.view==='sezione')return renderSezione();
+  if(S.view==='scheda')return renderScheda();
+  if(S.view==='verifica')return renderVerifica();
+  ({trincee:renderTrincee,us:renderUsList,esporta:renderEsporta,scavo:renderScavo}[S.tab]||renderTrincee)();
+}
+/* aggiorna dopo una sincronizzazione senza disturbare chi sta scrivendo */
+function softRender(){const a=document.activeElement;if(a&&a.closest&&a.closest('#main')&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)){renderTabs();return}render()}
+
+/* ---------- accesso */
+function renderLogin(){
+  $('#main').innerHTML=`<section class="panel login"><h2>Accedi all'archivio</h2>
+    <p class="note">Usa il nome utente e il PIN che ti ha dato il responsabile di cantiere.</p>
+    ${API.url?'':`<label class="f"><span>Indirizzo dell'archivio</span><input id="lgUrl" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec"></label>`}
+    <label class="f"><span>Nome utente</span><input id="lgUser" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="username"></label>
+    <label class="f"><span>PIN</span><input id="lgPin" type="password" inputmode="numeric" autocomplete="current-password"></label>
+    <div class="row"><button class="primary" id="lgGo">Entra</button>${API.url?'<button class="ghost" id="lgOther">Collegati a un altro archivio</button>':''}</div>
+    <div id="lgMsg" class="msg" role="status"></div></section>`;
+  const go=async()=>{let url=API.url;if(!url){const raw=$('#lgUrl').value.trim(),m=/https?:\/\/\S+/i.exec(raw);url=m?m[0].replace(/[)\].,;"'»]+$/,''):raw}
+    const u=$('#lgUser').value.trim(),pin=$('#lgPin').value.trim(),msg=$('#lgMsg');
+    if(!/^https:\/\/script\.google(usercontent)?\.com\//i.test(url)&&!/^http:\/\/localhost[:/]/.test(url)){msg.textContent='L’indirizzo dell’archivio deve iniziare con https://script.google.com/';msg.className='msg err';return}
+    if(!u||!pin){msg.textContent='Scrivi nome utente e PIN.';msg.className='msg err';return}
+    msg.textContent='Controllo…';msg.className='msg';API={url};
+    try{const j=await api('login',{username:u,pin});API={url,token:j.token,user:j.user,archivio:j.archivio,ai:!!j.ai};ls.set('ts-api',API);loadLocal();render();sync()}
+    catch(e){msg.textContent=e.message;msg.className='msg err'}};
+  $('#lgGo').onclick=go;$('#lgPin').onkeydown=e=>{if(e.key==='Enter')go()};
+  const o=$('#lgOther');if(o)o.onclick=()=>{API={};ls.set('ts-api',API);renderLogin()};
+}
+
+/* ---------- trincee */
+function renderTrincee(){
+  const sc=curScavo(),trs=trinceeOf(sc.id);
+  $('#main').innerHTML=`<div class="stack">
+    <section class="panel lead">
+      <h3>Detta una sezione</h3>
+      <p class="note">Tocca il campo e usa il microfono della tastiera: «Trincea 4 sezione 1, US 1 altezza 70 centimetri, US 2 altezza 30 centimetri, US 5 altezza 15 centimetri». La larghezza è sempre 3 m e il totale si calcola da solo. Per una descrizione: «… 15 centimetri descrizione argilla limosa».</p>
+      <textarea id="dett" rows="3" placeholder="Trincea 4 sezione 1, US 1 altezza 70 centimetri, US 2 altezza 30 centimetri…"></textarea>
+      <div class="dprev" id="dettPrev"></div>
+      <div class="row"><button class="primary" id="dettGo" disabled>Crea la sezione</button><span class="msg" id="dettMsg"></span></div>
+    </section>
+    ${fotoPanel(sc)}
+    <div class="row"><h2>Trincee e sondaggi</h2><span class="spacer"></span>
+      <select id="ntTipo" style="width:auto"><option>TRINCEA</option><option>SONDAGGIO</option><option>SAGGIO</option></select>
+      <input id="ntNum" placeholder="n." inputmode="numeric" style="width:90px">
+      <button data-act="nuovaTrincea">+ Aggiungi</button></div>
+    ${trs.length>8?`<input id="trQ" type="search" inputmode="numeric" placeholder="Vai alla trincea n." style="max-width:260px">`:''}
+    ${trs.length?`<div class="trs">${trs.map(t=>{const sz=sezioniOf(t.id);return `<article class="tr" data-trn="${esc(normNum(t.numero))}">
+      <div class="tr-h"><span class="bar3" aria-hidden="true"></span><b>${esc(trLabel(t))}</b><span class="spacer"></span><span class="muted small">${sz.length} sezion${sz.length===1?'e':'i'}</span></div>
+      ${sz.map(s=>`<button class="sz" data-act="apriSez" data-id="${esc(s.id)}"><span class="n">Sez. ${esc(s.numero||'–')}</span><span class="seq">US ${esc((s.strati||[]).map(x=>x.us).join(' · ')||'—')}</span><span class="tot">${sezTot(s).toFixed(2)} m</span></button>`).join('')}
+      <div class="tr-f"><button class="sm" data-act="nuovaSez" data-id="${esc(t.id)}">+ Sezione</button>${sz.length?'':`<button class="sm danger" data-act="delTrincea" data-id="${esc(t.id)}">Elimina</button>`}</div></article>`}).join('')}</div>`
+    :`<div class="empty"><p>Nessuna trincea in questo scavo. Aggiungila qui sopra oppure detta direttamente la prima sezione: la trincea viene creata da sola.</p></div>`}
+  </div>`;
+  const tq=$('#trQ');if(tq)tq.oninput=()=>{const q=normNum(tq.value);$$('article.tr').forEach(a=>a.hidden=!!q&&a.dataset.trn!==q)};
+  const fi=$('#fotoIn');$('#fotoGo').onclick=()=>fi.click();fi.onchange=async()=>{const f=fi.files[0];fi.value='';if(!f)return;try{await aggiungiFoto(f)}catch(e){toast(e.message)}};
+  const d=$('#dett');d.oninput=()=>{const r=interpretaDettato(d.value);$('#dettPrev').innerHTML=dettPreview(r)+(r.strati.length?ctrlHtml(controlli(sc.id,{tipo:r.tipo,trincea:r.trincea,sezione:r.sezione,strati:r.strati})):'');$('#dettGo').disabled=!r.strati.length};
+  $('#dettGo').onclick=()=>{const r=interpretaDettato(d.value);if(!r.strati.length)return;
+    if(!r.trincea){const m=$('#dettMsg');m.textContent='Di’ anche il numero della trincea, per esempio «Trincea 4 sezione 1, …».';m.className='msg err';return}
+    let t=trinceeOf(sc.id).find(x=>x.tipo===r.tipo&&normNum(x.numero)===normNum(r.trincea));
+    if(!t){const id=uid('t');put('trincee/'+id,{scavo:sc.id,tipo:r.tipo,numero:r.trincea});t={id}}
+    const libera=r.sezione&&!sezioniOf(t.id).some(x=>normNum(x.numero)===normNum(r.sezione))?r.sezione:'';
+    if(r.sezione&&!libera)toast(`La sezione ${r.sezione} esisteva già: creata con il primo numero libero.`,5000);
+    const s=newSezione(t.id,libera,r.strati,r.avvisi);openSez(s.id)};
+}
+function newSezione(trId,numero,strati,dubbi){
+  const t=S.docs['trincee/'+trId],ex=sezioniOf(trId);const n=numero||String((Math.max(0,...ex.map(s=>parseInt(s.numero,10)||0)))+1);
+  const id=uid('s');const s={scavo:t.scavo,trincea:trId,numero:n,strati:strati?takeStrati(t.scavo,strati):[{us:'',cm:''}],dubbi:dubbi||[]};
+  put('sezioni/'+id,s);return{...s,id};
+}
+function openSez(id){S.view='sezione';S.openSez=id;S.tab='trincee';render();scrollTo(0,0)}
+
+/* ---------- sezione */
+let sezSaveT;
+function renderSezione(){
+  const s0=S.docs['sezioni/'+S.openSez];if(!s0){S.view=null;return render()}
+  const s={...JSON.parse(JSON.stringify(s0)),id:S.openSez},sc=curScavo(),trs=trinceeOf(sc.id);
+  const save=(rebuild)=>{clearTimeout(sezSaveT);sezSaveT=setTimeout(()=>{const {id,...d}=s;put('sezioni/'+id,d)},400);$('#tot').textContent=sezTot(s).toFixed(2);previewSez(s);if(rebuild)rows();links()};
+  $('#main').innerHTML=`<div class="stack">
+    <div class="row"><button class="ghost" data-act="back">← Trincee</button><h2 id="sTitle">${esc(sezTitle(s))}</h2><span class="spacer"></span>${s.foto&&S.docs['foto/'+s.foto]?`<button class="sm" data-act="vediFoto" data-id="${esc(s.foto)}">Vedi la pagina del quaderno</button>`:''}</div>
+    ${(s.dubbi&&s.dubbi.length)?`<div class="panel" style="border-color:var(--warn)"><b>Da verificare</b><ul style="margin:0">${s.dubbi.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><div><button class="sm" id="dubOk">Verificato</button></div></div>`:''}
+    <div class="two">
+      <div class="stack">
+        <section class="panel">
+          <div class="grid12">
+            <label class="f c8"><span>Trincea / sondaggio</span><select id="sTr">${trs.map(t=>`<option value="${esc(t.id)}" ${t.id===s.trincea?'selected':''}>${esc(trLabel(t))}</option>`).join('')}</select></label>
+            <label class="f c4"><span>Sezione n.</span><input id="sNum" value="${esc(s.numero||'')}" inputmode="numeric"></label>
+          </div>
+          <div class="shdr"><span></span><span>US</span><span>Spess. cm</span><span>Descrizione della US (si scrive una volta sola)</span><span></span></div>
+          <div class="strati" id="strati"></div>
+          <datalist id="dlUs"></datalist>
+          <div class="row"><button class="sm" id="addStrato">+ Strato</button><span class="spacer"></span><span class="mono small">Profondità totale <b id="tot">${sezTot(s).toFixed(2)}</b> m</span></div>
+          <label class="f"><span>Aggiungi dettando <small>(gli strati vanno in fondo)</small></span><textarea id="dettA" rows="2" placeholder="US 6 altezza 20 centimetri…"></textarea></label>
+          <div class="dprev" id="dettAPrev"></div>
+          <div><button class="sm" id="dettAGo" disabled>Aggiungi gli strati dettati</button></div>
+        </section>
+        <section class="panel">
+          <h3>Elenco US della sezione</h3>
+          <div class="tbl"><table class="us mini"><thead><tr><th>US</th><th>Descrizione</th><th>Spess.</th><th>Coperta da</th><th>Copre</th><th>Scheda</th></tr></thead><tbody id="usLinks"></tbody></table></div>
+          <p class="note">Nel disegno compare solo il numero: in un'ellisse le unità positive, in un rettangolo i tagli, in una casetta le strutture (il tipo si sceglie nella scheda US).</p>
+          <div class="row"><button id="relGo">Aggiorna i rapporti delle US</button><span class="note">Chi sta sopra copre chi sta sotto: li aggiunge alle schede (copre / coperto da).</span></div>
+        </section>
+      </div>
+      <div class="stack">
+        <div class="sheet"><canvas id="cv"></canvas></div>
+        <section class="panel">
+          <div class="row"><div class="seg" id="fmt">${['png','jpg','pdf'].map(f=>`<button data-f="${f}" aria-pressed="${S.fmt===f}">${f.toUpperCase()}</button>`).join('')}</div>
+            <button class="primary" id="dl">Scarica</button><button id="drv">Salva nella cartella dello scavo</button></div>
+          <span class="msg" id="sMsg"></span>
+          <div class="row"><span class="spacer"></span><button class="sm danger" id="delSez">Elimina sezione</button></div>
+          <div id="delBox"></div>
+        </section>
+      </div>
+    </div></div>`;
+  function rows(){const box=$('#strati');box.innerHTML='';
+    s.strati.forEach((x,i)=>{const r=document.createElement('div');r.className='strato';
+      r.innerHTML=`<div class="mv"><button aria-label="Sposta su" ${i?'':'disabled'}>▲</button><button aria-label="Sposta giù" ${i<s.strati.length-1?'':'disabled'}>▼</button></div>
+        <div class="uscell"><input placeholder="US" value="${esc(x.us)}" id="sus${i}" list="dlUs" autocapitalize="characters"><button class="pk" aria-label="Scegli la US dall'elenco" aria-expanded="false">▾</button></div>
+        <input class="num" placeholder="cm" inputmode="decimal" value="${esc(x.cm)}" id="scm${i}">
+        <input class="d" placeholder="${x.us?'Descrizione della US '+esc(x.us):'Descrizione della US'}" value="${esc(usBreve(sc.id,x.us)||x.descr||'')}" id="sde${i}"><button class="x" aria-label="Elimina strato">✕</button>`;
+      const pick=document.createElement('div');pick.className='usPick';pick.hidden=true;
+      const [up,dn]=r.querySelectorAll('.mv button'),[us,cm,de]=r.querySelectorAll('input'),pk=r.querySelector('.pk');
+      up.onclick=()=>{[s.strati[i-1],s.strati[i]]=[s.strati[i],s.strati[i-1]];save(true)};
+      dn.onclick=()=>{[s.strati[i+1],s.strati[i]]=[s.strati[i],s.strati[i+1]];save(true)};
+      us.oninput=()=>{x.us=us.value.trim().toUpperCase();save(false)};
+      us.onchange=()=>{x.us=normNum(us.value);if(x.us)ensureUs(sc.id,x.us);save(true)};
+      cm.oninput=()=>{x.cm=cm.value.trim();save(false)};
+      de.oninput=()=>{const n=normNum(x.us);if(!n){de.value='';return toast('Scrivi o scegli prima il numero della US.')}
+        const u=ensureUs(sc.id,n);u.breve=de.value;delete x.descr;saveUs(u);previewSez(s);links()};
+      pk.onclick=()=>{const open=pick.hidden;$$('.usPick').forEach(p=>p.hidden=true);$$('.pk').forEach(b=>b.setAttribute('aria-expanded','false'));
+        if(!open)return;pick.hidden=false;pk.setAttribute('aria-expanded','true');
+        const all=usOf(sc.id),tm=usTrMap(sc.id),here=all.filter(u=>tm[normNum(u.numero)]&&tm[normNum(u.numero)].has(s.trincea)),
+          multi=all.filter(u=>!here.includes(u)&&tm[normNum(u.numero)]&&tm[normNum(u.numero)].size>1),nx=nextUsNum(sc.id);
+        const btns=l=>l.map(u=>`<button class="sm" data-n="${esc(u.numero)}">${usLabel(u)}</button>`).join('');
+        pick.innerHTML=`<input class="pq" placeholder="Cerca tra tutte le ${all.length} US (numero o descrizione)" style="flex-basis:100%">
+          <div class="pl" style="display:flex;flex-wrap:wrap;gap:6px;flex-basis:100%">${here.length?`<span class="note" style="flex-basis:100%">In questa trincea</span>${btns(here)}`:''}
+          ${multi.length?`<span class="note" style="flex-basis:100%">Comuni a più trincee</span>${btns(multi)}`:''}</div>
+          <button class="sm primary" data-n="${esc(nx)}">+ Nuova US n. ${esc(nx)}</button>`;
+        const pl=pick.querySelector('.pl'),pq=pick.querySelector('.pq'),base=pl.innerHTML;
+        const bind=()=>pick.querySelectorAll('button[data-n]').forEach(b=>b.onclick=()=>{x.us=b.dataset.n;ensureUs(sc.id,x.us);save(true);const d=$('#sde'+i);if(d&&!d.value)d.focus()});
+        pq.oninput=()=>{const q=pq.value.trim().toLowerCase();if(!q){pl.innerHTML=base;bind();return}
+          const hit=all.filter(u=>normNum(u.numero).toLowerCase()===q||normNum(u.numero).toLowerCase().startsWith(q)||String(u.breve||u.definizione||'').toLowerCase().includes(q)).slice(0,40);
+          pl.innerHTML=hit.length?btns(hit):'<span class="note">Nessuna US trovata: usa «Nuova US».</span>';bind()};
+        bind()};
+      r.querySelector('.x').onclick=()=>{s.strati.splice(i,1);save(true)};box.append(r,pick)})}
+  function links(){
+    $('#dlUs').innerHTML=usOf(sc.id).map(u=>`<option value="${esc(u.numero)}">${esc(u.breve||u.definizione||'')}</option>`).join('');
+    const st=s.strati.filter(x=>normNum(x.us));
+    $('#usLinks').innerHTML=st.map((x,i)=>{const n=normNum(x.us),u=findUs(sc.id,n),sopra=i?normNum(st[i-1].us):'',sotto=i<st.length-1?normNum(st[i+1].us):'';
+      return `<tr data-act="apriUsNum" data-n="${esc(n)}"><td class="n">${esc(n)}</td><td>${esc(u&&u.breve||'')}</td><td class="mono small">${esc(x.cm)}${x.cm?' cm':''}</td>
+        <td class="rel">${esc(sopra)}</td><td class="rel">${esc(sotto)}</td><td>${u?`<span class="chip ${u.stato==='completa'?'completa':'bozza'}">${u.stato==='completa'?'completa':'bozza'}</span>`:''}</td></tr>`}).join('')
+      ||'<tr><td colspan="6" class="note">Nessuna US.</td></tr>'}
+  rows();links();previewSez(s);
+  $('#sTr').onchange=e=>{s.trincea=e.target.value;$('#sTitle').textContent=sezTitle(s);save(false)};
+  $('#sNum').oninput=e=>{s.numero=e.target.value.trim();$('#sTitle').textContent=sezTitle(s);save(false)};
+  $('#addStrato').onclick=()=>{s.strati.push({us:'',cm:''});save(true);const e=$('#sus'+(s.strati.length-1));if(e)e.focus()};
+  const da=$('#dettA');da.oninput=()=>{const r=interpretaDettato(da.value);$('#dettAPrev').innerHTML=dettPreview(r);$('#dettAGo').disabled=!r.strati.length};
+  $('#dettAGo').onclick=()=>{const r=interpretaDettato(da.value);if(!r.strati.length)return;s.strati=s.strati.filter(x=>x.us||x.cm).concat(takeStrati(sc.id,r.strati));
+    if(r.avvisi.length)s.dubbi=[...(s.dubbi||[]),...r.avvisi];da.value='';$('#dettAPrev').innerHTML='';$('#dettAGo').disabled=true;save(true)};
+  const ok=$('#dubOk');if(ok)ok.onclick=()=>{s.dubbi=[];const {id,...d}=s;put('sezioni/'+id,d);render()};
+  $('#relGo').onclick=()=>{const {id,...d}=s;put('sezioni/'+id,d);const n=applySezRels(sc.id,[...new Set(s.strati.map(x=>normNum(x.us)).filter(Boolean))]);toast(n?(n===1?'Aggiunto 1 rapporto alle schede US.':`Aggiunti ${n} rapporti alle schede US.`):'I rapporti erano già tutti presenti.');links()};
+  $$('#fmt button').forEach(b=>b.onclick=()=>{S.fmt=b.dataset.f;persist();$$('#fmt button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)))});
+  const msg=(t,e)=>{const m=$('#sMsg');m.textContent=t;m.className='msg'+(e?' err':'')};
+  $('#dl').onclick=async()=>{try{const [n,b]=await sezFile(s,S.fmt);await offerFile(n,b)}catch(e){msg(e.message,true)}};
+  $('#drv').onclick=async()=>{msg('Salvo…');try{const [n,b]=await sezFile(s,S.fmt);const j=await toDrive(sc,'Sezioni',n,b);msg('Salvata in '+j.cartella+': '+n)}catch(e){msg(e.message,true)}};
+  $('#delSez').onclick=()=>{$('#delBox').innerHTML=`<div class="confirm"><span>Eliminare definitivamente questa sezione? Le schede US restano.</span><button class="sm danger" id="delY">Elimina</button><button class="sm" id="delN">Annulla</button></div>`;
+    $('#delY').onclick=()=>{remove('sezioni/'+s.id);S.view=null;render()};$('#delN').onclick=()=>$('#delBox').innerHTML=''};
+}
+
+/* ---------- elenco US */
+function renderUsList(){
+  const sc=curScavo(),list=usOf(sc.id);
+  const dup=Object.entries(list.reduce((a,u)=>{const n=normNum(u.numero);a[n]=(a[n]||0)+1;return a},{})).filter(([,c])=>c>1).map(([n])=>n);
+  const nz=list.filter(u=>!usInSezioni(sc.id,u.numero).length).length;
+  $('#main').innerHTML=`<div class="stack">
+    <div class="row"><h2>Unità stratigrafiche</h2><span class="spacer"></span><button class="primary" data-act="nuovaUs">+ Nuova US (n. ${esc(nextUsNum(sc.id))})</button></div>
+    ${dup.length?`<div class="panel" style="border-color:var(--err)"><b>Numeri doppi: ${esc(dup.join(', '))}.</b> Probabilmente due persone hanno creato la stessa US senza rete: apri le schede e cambia il numero di una delle due.</div>`:''}
+    ${list.length>12?`<div class="row"><select id="fTr" style="width:auto"><option value="">Tutte le trincee</option>${trinceeOf(sc.id).map(t=>`<option value="${esc(t.id)}" ${S.fTr===t.id?'selected':''}>${esc(trLabel(t))}</option>`).join('')}</select>
+      <input id="fQ" type="search" placeholder="Cerca numero o descrizione" value="${esc(S.fQ||'')}" style="flex:1 1 200px;width:auto"><span class="note" id="fN"></span></div>`:''}
+    ${list.length?`<div class="tbl"><table class="us"><thead><tr><th>US</th><th>Tipo</th><th>Descrizione breve</th><th>Trincee</th><th>Spessore</th><th>Rapporti</th><th>Stato</th></tr></thead><tbody>
+      ${list.map(u=>{const d=derivedOf(sc.id,u.numero);const rr=[['copre','copre'],['copertoda','coperto da'],['taglia','taglia'],['tagliatoda','tagliato da'],['riempie','riempie'],['riempitoda','riempito da'],['uguale','=']].map(([k,l])=>(u.rel&&u.rel[k]||[]).length?`${l} ${joinNums(u.rel[k])}`:'').filter(Boolean).join(' · ');
+        return `<tr data-act="apriUs" data-id="${esc(u.id)}" data-n="${esc(normNum(u.numero))}" data-q="${esc(String(u.numero+' '+(u.breve||'')+' '+(u.definizione||'')).toLowerCase())}"><td class="n">${esc(u.numero)}</td><td><span class="chip ${u.segno==='negativa'?'neg':u.segno==='struttura'?'str':'pos'}">${u.segno==='negativa'?'negativa':u.segno==='struttura'?'struttura':'positiva'}</span></td>
+        <td>${esc(u.breve||u.definizione||'')}</td><td class="small">${esc(d.saggio||'—')}</td><td class="mono small">${esc(d.misure.replace('spessore ','')||'')}</td><td class="rel">${esc(rr)}</td>
+        <td><span class="chip ${u.stato==='completa'?'completa':'bozza'}">${u.stato==='completa'?'completa':'bozza'}</span></td></tr>`}).join('')}</tbody></table></div>`
+    :`<div class="empty"><p>Nessuna US. Le US vengono create da sole quando le scrivi in una sezione; puoi anche aggiungerle da qui.</p></div>`}
+    ${nz&&list.length?`<p class="note">${nz} US non compaiono in nessuna sezione.</p>`:''}
+  </div>`;
+  const tm=usTrMap(sc.id);
+  const filt=()=>{const tr=S.fTr||'',q=(S.fQ||'').trim().toLowerCase();let n=0;
+    $$('tr[data-act=apriUs]').forEach(r=>{const ok=(!tr||(tm[r.dataset.n]&&tm[r.dataset.n].has(tr)))&&(!q||r.dataset.n.toLowerCase()===q||r.dataset.q.includes(q));r.hidden=!ok;if(ok)n++});
+    const f=$('#fN');if(f)f.textContent=(tr||q)?`${n} di ${list.length}`:''};
+  const ft=$('#fTr');if(ft){ft.onchange=()=>{S.fTr=ft.value;filt()};$('#fQ').oninput=e=>{S.fQ=e.target.value;filt()};filt()}
+}
+
+/* ---------- scheda US */
+const SCH=[
+  {t:'Identificazione',f:[['saggio','Saggio / trincee',6,'auto'],['sezioni','Sezioni',6],['area','Area',4],['quote','Quote',4],['foto','Fotografie',4],['piante','Piante',6],['prospetti','Prospetti',6]]},
+  {t:'Definizione',f:[['breve','Descrizione breve (compare sotto il numero nelle sezioni)',12],['definizione','Definizione',6,'list'],['natura','Naturale / artificiale',6,'sel',['','naturale','artificiale']],['criteri','Criteri di distinzione',12,'area'],['formazione','Modo di formazione',12,'list']]},
+  {t:'Componenti e caratteri',f:[['geologici','Componenti inorganici',6,'list'],['organici','Componenti organici',6,'list'],['consistenza','Consistenza',4,'list'],['colore','Colore',4,'list'],['misure','Misure',4,'auto'],['conservazione','Stato di conservazione',12,'list']]},
+  {t:'Descrizione',desc:true,f:[['descrizione','Descrizione',12,'area']]},
+  {t:'Sequenza fisica',rel:true},
+  {t:'Interpretazione e datazione',f:[['osservazioni','Osservazioni',12,'area'],['interpretazione','Interpretazione',12,'area'],['datazione','Datazione',4],['periodo','Periodo',4],['fase','Fase',4],
+    ['elementiDatanti','Elementi datanti',12,'list'],['reperti','Dati quantitativi dei reperti',12],['campionature','Campionature',4],['flottazione','Flottazione',4],['setacciatura','Setacciatura',4],['affidabilita','Affidabilità stratigrafica',6,'sel',['','alta','media','bassa']]]},
+  {t:'Compilazione',f:[['data','Data rilevamento',6,'date'],['responsabile','Responsabile compilazione',6]]},
+  {t:'Altri campi della scheda ICCD',closed:true,f:[['ambiente','Ambiente / unità funzionale',6],['posizione','Posizione',6],['settore','Settore/i',4],['quadrato','Quadrato/i',4],['attivita','Attività',4],
+    ['riferimentiMateriali','Riferimenti tabelle materiali',12],['identificativo','Identificativo del saggio di riferimento',12],['dataRiel','Data rielaborazione',6,'date'],['respRiel','Responsabile rielaborazione',6]]}];
+const REL_UI=[['copre','Copre'],['copertoda','Coperto da'],['taglia','Taglia'],['tagliatoda','Tagliato da'],['riempie','Riempie'],['riempitoda','Riempito da'],['uguale','Uguale a'],['silega','Si lega a'],['siappoggia','Si appoggia a'],['gliappoggia','Gli si appoggia']];
+let usSaveT;
+function openUs(id){S.view='scheda';S.openUs=id;S.tab='us';render();scrollTo(0,0)}
+function renderScheda(){
+  const r0=S.docs['us/'+S.openUs];if(!r0){S.view=null;return render()}
+  const sc=curScavo(),r={...JSON.parse(JSON.stringify(r0)),id:S.openUs},d=derivedOf(sc.id,r.numero);
+  const save=()=>{clearTimeout(usSaveT);usSaveT=setTimeout(()=>saveUs(r),400)};
+  const missRel=['copre','copertoda'].map(k=>[k,d[k].filter(x=>!((r.rel&&r.rel[k])||[]).includes(x))]).filter(([,a])=>a.length);
+  const field=([k,l,span,type,opts])=>{const v=r[k]??'';const auto=type==='auto'?d[k]:'';
+    const lab=`<span>${esc(l)}${auto?` <small>(se vuoto: dalle sezioni)</small>`:''}</span>`;
+    if(type==='area')return `<label class="f c${span}">${lab}<textarea data-uf="${k}" rows="${k==='descrizione'?5:3}">${esc(v)}</textarea></label>`;
+    if(type==='sel')return `<label class="f c${span}">${lab}<select data-uf="${k}">${opts.map(o=>`<option value="${esc(o)}" ${o===v?'selected':''}>${esc(o||'—')}</option>`).join('')}</select></label>`;
+    if(type==='date')return `<label class="f c${span}">${lab}<input type="date" data-uf="${k}" value="${esc(v)}"></label>`;
+    return `<label class="f c${span}">${lab}<input data-uf="${k}" value="${esc(v)}" ${auto?`placeholder="${esc(auto)}"`:''} ${type==='list'?`list="dl-${k}"`:''}></label>`};
+  $('#main').innerHTML=`<div class="stack">
+    <div class="row"><button class="ghost" data-act="backUs">← Elenco US</button></div>
+    <div class="row" style="align-items:flex-end">
+      <label class="f" style="width:130px"><span>US</span><input id="uNum" class="mono" style="font-size:26px;font-weight:600" value="${esc(r.numero)}"></label>
+      <div class="tiposel" role="group" aria-label="Tipo di unità"><button class="pos" data-seg="positiva" aria-pressed="${r.segno!=='negativa'&&r.segno!=='struttura'}">Positiva</button><button class="neg" data-seg="negativa" aria-pressed="${r.segno==='negativa'}">Negativa (taglio)</button><button class="str" data-seg="struttura" aria-pressed="${r.segno==='struttura'}">Struttura</button></div>
+      <span class="spacer"></span>
+      <div class="tiposel" role="group" aria-label="Stato"><button data-st="bozza" aria-pressed="${r.stato!=='completa'}">Bozza</button><button data-st="completa" aria-pressed="${r.stato==='completa'}">Completa</button></div>
+    </div>
+    <div class="derived">
+      ${d.w.length?`<div><b>Compare in:</b> ${d.w.map(x=>`<button class="sm" data-act="apriSez" data-id="${esc(x.sez.id)}">${esc(trShort(x.tr)+(x.sez.numero?' sez. '+x.sez.numero:''))} · ${esc(x.cm)} cm</button>`).join(' ')}</div>`:'<div class="note">Questa US non compare ancora in nessuna sezione.</div>'}
+      ${missRel.length?`<div class="row"><span>Dalle sezioni: ${missRel.map(([k,a])=>`<b>${k==='copre'?'copre':'coperto da'} ${esc(a.join(', '))}</b>`).join(' · ')}</span><button class="sm primary" id="applyRel">Aggiungi ai rapporti</button></div>`:''}
+    </div>
+    <section class="panel lead">
+      <h3>Descrizione rapida</h3>
+      <p class="note">Tocca il campo e detta con il microfono della tastiera, come sul quaderno: «strato a matrice limoso-argillosa di colore bruno, compatto, con carboni e frammenti di laterizi; copre 5, coperto da 1; probabile arativo». L'app estrae le voci della scheda e te le mostra prima di inserirle.</p>
+      <textarea id="quick" rows="3"></textarea>
+      <div class="row"><button id="quickGo">Estrai le voci</button><span class="msg" id="quickMsg"></span></div>
+      <div id="quickRev"></div>
+    </section>
+    ${SCH.map(sec=>`<details class="sec" ${sec.closed?'':'open'}><summary><h3>${esc(sec.t)}</h3></summary>
+      ${sec.rel?`<div class="relgrid">${REL_UI.map(([k,l])=>`<label class="f"><span>${esc(l)}</span><input data-rel="${k}" value="${esc(joinNums(r.rel&&r.rel[k]))}" placeholder="numeri separati da virgola"></label>`).join('')}</div>`
+      :`<div class="grid12">${sec.f.map(field).join('')}${sec.desc?`<div class="c12"><button class="sm" id="compose">Componi la descrizione dai campi</button></div>`:''}</div>`}</details>`).join('')}
+    <section class="panel">
+      <div class="row"><button class="primary" id="pdf">Scarica la scheda PDF</button><button id="pdfDrv">Salva nella cartella dello scavo</button><span class="spacer"></span><button class="sm danger" id="delUs">Elimina US</button></div>
+      <span class="msg" id="uMsg"></span><div id="delBox"></div>
+    </section>
+    ${['definizione','geologici','organici','artificiali','colore','consistenza','elementiDatanti','conservazione','formazione'].map(k=>`<datalist id="dl-${k}">${vociFor(k,sc.id).map(v=>`<option value="${esc(v)}">`).join('')}</datalist>`).join('')}
+  </div>`;
+  $$('[data-uf]').forEach(e=>e.addEventListener(e.tagName==='SELECT'?'change':'input',()=>{r[e.dataset.uf]=e.value;save()}));
+  $$('[data-rel]').forEach(e=>e.addEventListener('change',()=>{setRel(r,e.dataset.rel,e.value);e.value=joinNums(r.rel[e.dataset.rel]);saveUs(r)}));
+  $$('[data-seg]').forEach(b=>b.onclick=()=>{r.segno=b.dataset.seg;$$('[data-seg]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));save()});
+  $$('[data-st]').forEach(b=>b.onclick=()=>{r.stato=b.dataset.st;$$('[data-st]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));save()});
+  $('#uNum').onchange=e=>{const nn=normNum(e.target.value);if(!nn){e.target.value=r.numero;return toast('Il numero è obbligatorio.')}
+    if(nn!==normNum(r.numero)&&findUs(sc.id,nn)){e.target.value=r.numero;return toast(`La US ${nn} esiste già in questo scavo.`)}
+    const old=normNum(r.numero);r.numero=nn;saveUs(r);
+    usOf(sc.id).forEach(t=>{if(t.id===r.id||!t.rel)return;let ch=false;Object.keys(t.rel).forEach(k=>{if(t.rel[k].includes(old)){t.rel[k]=t.rel[k].map(x=>x===old?nn:x);ch=true}});if(ch)saveUs(t)});
+    sezioniScavo(sc.id).forEach(s=>{if((s.strati||[]).some(x=>normNum(x.us)===old)){const {id,...dd}=s;dd.strati=dd.strati.map(x=>normNum(x.us)===old?{...x,us:nn}:x);put('sezioni/'+id,dd)}});
+    toast(`Numero cambiato in ${nn}, anche nelle sezioni e nei rapporti.`)};
+  const ap=$('#applyRel');if(ap)ap.onclick=()=>{missRel.forEach(([k,a])=>setRel(r,k,[...((r.rel&&r.rel[k])||[]),...a]));saveUs(r);render()};
+  /* descrizione dettata → voci della scheda, sempre da verificare prima di inserirle */
+  $('#quickGo').onclick=async()=>{const t=$('#quick').value.trim();if(!t)return;const m=$('#quickMsg');m.className='msg';
+    const lists=Object.fromEntries(Object.keys(VOCI).map(k=>[k,vociFor(k,sc.id)]));let x=null,fonte='sul dispositivo';
+    if(API.ai&&navigator.onLine){m.innerHTML='<span class="spin"></span>Leggo la descrizione…';
+      try{x=await api('estraiDescrizione',{testo:t,voci:Object.fromEntries(Object.entries(lists).map(([k,v])=>[k,v.slice(0,60)]))});fonte='con Claude'}catch(e){x=null}}
+    if(!x)x=localExtract(t,'US',lists);
+    x={...x};if(x.artificiali){x.geologici=[...new Set([...tk(x.geologici),...tk(x.artificiali)])].join(', ');delete x.artificiali} /* nella scheda ICCD gli artificiali stanno tra gli inorganici */
+    const LAB=Object.fromEntries(SCH.flatMap(sec=>(sec.f||[]).map(f=>[f[0],f[1]])));
+    const rows=[];
+    Object.entries(x).forEach(([k,v])=>{if(k==='rel'){Object.entries(v||{}).forEach(([rk,arr])=>{arr=parseNums(arr).filter(n=>!((r.rel&&r.rel[rk])||[]).includes(n));if(arr.length&&RELLAB[rk])rows.push({k:'rel:'+rk,lab:RELLAB[rk],v:arr.join(', '),cur:joinNums(r.rel&&r.rel[rk]),on:true})});return}
+      if(k==='segno'&&['positiva','negativa','struttura'].includes(v)&&v!==(r.segno||'positiva')){rows.push({k,lab:'Tipo di unità',v,cur:r.segno||'positiva',on:true});return}
+      if(!LAB[k]||v==null||!String(v).trim())return;v=String(v).trim();const cur=String(r[k]||'').trim();if(cur.toLowerCase()===v.toLowerCase())return;
+      rows.push({k,lab:LAB[k],v,cur,on:!cur})});
+    if(!rows.length){m.textContent='Nessuna voce nuova trovata nella descrizione.';$('#quickRev').innerHTML='';return}
+    m.textContent=`Estratte ${rows.length} voci (${fonte}). Controlla e spunta quelle da inserire: le voci con un valore già presente sono deselezionate.`;
+    $('#quickRev').innerHTML=`<div class="derived">${rows.map((w,i)=>`<label class="qrow"><input type="checkbox" data-q="${i}" ${w.on?'checked':''}>
+      <span class="ql">${esc(w.lab)}</span><input class="qv" data-qv="${i}" value="${esc(w.v)}">${w.cur?`<span class="qc">ora: ${esc(w.cur)}${w.k.startsWith('rel:')?' (si aggiunge)':' (verrà sostituito)'}</span>`:''}</label>`).join('')}
+      <div class="row"><button class="primary sm" id="qOk">Inserisci le voci spuntate</button><button class="sm" id="qNo">Annulla</button></div></div>`;
+    $('#qNo').onclick=()=>{$('#quickRev').innerHTML='';m.textContent=''};
+    $('#qOk').onclick=()=>{const done=[];rows.forEach((w,i)=>{if(!$(`[data-q="${i}"]`).checked)return;const v=$(`[data-qv="${i}"]`).value.trim();if(!v)return;
+        if(w.k.startsWith('rel:')){const rk=w.k.slice(4);setRel(r,rk,[...((r.rel&&r.rel[rk])||[]),...parseNums(v)])}else r[w.k]=v;done.push(w.lab.toLowerCase())});
+      saveUs(r);render();const mm=$('#quickMsg');if(mm)mm.textContent=done.length?'Inserito: '+done.join(' · '):'Nessuna voce inserita.'};
+  };
+  $('#compose').onclick=()=>{const t=composeDesc({...r,tipo:'US'});if(!t)return toast('Compila prima definizione, componenti, colore o consistenza.');
+    const ta=$('[data-uf="descrizione"]');ta.value=t;r.descrizione=t;save()};
+  const msg=(t,e)=>{const m=$('#uMsg');m.textContent=t;m.className='msg'+(e?' err':'')};
+  $('#pdf').onclick=async()=>{clearTimeout(usSaveT);saveUs(r);msg('Preparo il PDF…');try{await offerFile(usPdfName(r),await schedePdf([r],sc));msg('')}catch(e){msg(e.message,true)}};
+  $('#pdfDrv').onclick=async()=>{clearTimeout(usSaveT);saveUs(r);msg('Salvo…');try{const j=await toDrive(sc,'Schede PDF',usPdfName(r),await schedePdf([r],sc));msg('Salvata in '+j.cartella)}catch(e){msg(e.message,true)}};
+  $('#delUs').onclick=()=>{$('#delBox').innerHTML=`<div class="confirm"><span>Eliminare la scheda US ${esc(r.numero)}? I rapporti delle altre US verso questa restano da correggere a mano.</span><button class="sm danger" id="delY">Elimina</button><button class="sm" id="delN">Annulla</button></div>`;
+    $('#delY').onclick=()=>{remove('us/'+r.id);S.view=null;render()};$('#delN').onclick=()=>$('#delBox').innerHTML=''};
+}
+
+/* ---------- esporta */
+function renderEsporta(){
+  const sc=curScavo(),trs=trinceeOf(sc.id),tm=usTrMap(sc.id),eTr=trs.some(t=>t.id===S.eTr)?S.eTr:'';
+  const list=usOf(sc.id).filter(u=>!eTr||(tm[normNum(u.numero)]&&tm[normNum(u.numero)].has(eTr)));
+  const trN=s=>(S.docs['trincee/'+s.trincea]||{}),sz=sezioniScavo(sc.id).filter(s=>!eTr||s.trincea===eTr).sort((a,b)=>nat(trN(a).tipo,trN(b).tipo)||nat(trN(a).numero,trN(b).numero)||nat(a.numero,b.numero));
+  $('#main').innerHTML=`<div class="stack"><div class="row"><h2>Esporta</h2><span class="spacer"></span>
+    <select id="eTr" style="width:auto"><option value="">Tutto lo scavo</option>${trs.map(t=>`<option value="${esc(t.id)}" ${eTr===t.id?'selected':''}>Solo ${esc(trLabel(t))}</option>`).join('')}</select></div>
+    <div class="two">
+    <section class="panel"><h3>Sezioni (${sz.length})</h3>
+      <div class="row"><div class="seg" id="fmt">${['png','jpg','pdf'].map(f=>`<button data-f="${f}" aria-pressed="${S.fmt===f}">${f.toUpperCase()}</button>`).join('')}</div></div>
+      <div class="row"><button class="primary" id="zipSez">Cartella SEZIONI (.zip)</button><button id="pdfSez">Tutte in un unico PDF</button></div>
+      <div class="row"><button id="drvSez">Salva tutte nella cartella dello scavo</button></div>
+      <p class="note">300 dpi, strati larghi 3 m in scala 1:15, come i disegni Rhino. I file si chiamano «TRINCEA 4 - SEZIONE 1»; nel disegno il titolo è «TRINCEA 4, SEZIONE 1».</p>
+      <span class="msg" id="mSez"></span></section>
+    <section class="panel"><h3>Schede US (${list.length})</h3>
+      <label class="row"><input type="checkbox" id="soloComp" style="width:auto;min-height:auto"> Solo le schede completate</label>
+      <div class="row"><button class="primary" id="pdfUs">Tutte in un unico PDF</button><button id="zipUs">Un PDF per US (.zip)</button></div>
+      <div class="row"><button id="drvUs">Salva un PDF per US nella cartella dello scavo</button></div>
+      <p class="note">Modello ICCD, lo stesso del Taccuino di scavo. Se saggio, sezioni e misure sono vuoti, li ricava dalle sezioni.</p>
+      <span class="msg" id="mUs"></span></section>
+    <section class="panel"><h3>Dati</h3>
+      <div class="row"><button id="csv">Elenco US (CSV per Excel)</button><button id="bak">Backup completo (JSON)</button></div>
+      <label class="f"><span>Ripristina da un backup</span><input type="file" id="rest" accept=".json,application/json"></label>
+      <span class="msg" id="mDat"></span></section>
+    </div></div>`;
+  $$('#fmt button').forEach(b=>b.onclick=()=>{S.fmt=b.dataset.f;persist();$$('#fmt button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)))});
+  $('#eTr').onchange=e=>{S.eTr=e.target.value;renderEsporta()};
+  const say=(id,t,e)=>{const m=$('#'+id);m.innerHTML=t;m.className='msg'+(e?' err':'')};
+  const recs=()=>list.filter(u=>!$('#soloComp').checked||u.stato==='completa');
+  const base=safe(scavoName(sc))+(eTr?' '+safe(trLabel(S.docs['trincee/'+eTr])):'');
+  const run=(id,fn)=>async()=>{try{await fn()}catch(e){say(id,esc(e.message),true)}};
+  $('#zipSez').onclick=run('mSez',async()=>{if(!sz.length)return say('mSez','Nessuna sezione.',true);say('mSez','<span class="spin"></span>Preparo…');const JSZip=await zipLib();const z=new JSZip(),f=z.folder('SEZIONI');
+    for(const s of sz){const [n,b]=await sezFile(s,S.fmt);f.file(n,b)}await offerFile('SEZIONI '+base+'.zip',await z.generateAsync({type:'blob'}));say('mSez','')});
+  $('#pdfSez').onclick=run('mSez',async()=>{if(!sz.length)return say('mSez','Nessuna sezione.',true);say('mSez','<span class="spin"></span>Preparo…');await offerFile('SEZIONI '+base+'.pdf',await sezPdf(sz));say('mSez','')});
+  $('#drvSez').onclick=run('mSez',async()=>{if(!sz.length)return say('mSez','Nessuna sezione.',true);let i=0,j;for(const s of sz){say('mSez',`<span class="spin"></span>Salvo ${++i} di ${sz.length}…`);const [n,b]=await sezFile(s,S.fmt);j=await toDrive(sc,'Sezioni',n,b)}say('mSez',`Salvate ${sz.length} sezioni in ${esc(j.cartella)}`)});
+  $('#pdfUs').onclick=run('mUs',async()=>{const l=recs();if(!l.length)return say('mUs','Nessuna scheda da esportare.',true);say('mUs','<span class="spin"></span>Preparo…');await offerFile('Schede US '+base+'.pdf',await schedePdf(l,sc));say('mUs','')});
+  $('#zipUs').onclick=run('mUs',async()=>{const l=recs();if(!l.length)return say('mUs','Nessuna scheda da esportare.',true);say('mUs','<span class="spin"></span>Preparo…');const JSZip=await zipLib();const z=new JSZip(),f=z.folder('Schede US');
+    for(const r of l)f.file(usPdfName(r),await schedePdf([r],sc));await offerFile('Schede US '+base+'.zip',await z.generateAsync({type:'blob'}));say('mUs','')});
+  $('#drvUs').onclick=run('mUs',async()=>{const l=recs();if(!l.length)return say('mUs','Nessuna scheda da esportare.',true);let i=0,j;for(const r of l){say('mUs',`<span class="spin"></span>Salvo ${++i} di ${l.length}…`);j=await toDrive(sc,'Schede PDF',usPdfName(r),await schedePdf([r],sc))}say('mUs',`Salvate ${l.length} schede in ${esc(j.cartella)}`)});
+  $('#csv').onclick=()=>{const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+    const head=['US','Tipo','Definizione','Trincee','Sezioni (spessori)','Spessore','Copre','Coperto da','Taglia','Tagliato da','Riempie','Riempito da','Uguale a','Colore','Consistenza','Descrizione','Interpretazione','Datazione','Stato'];
+    const rows=list.map(u=>{const d=derivedOf(sc.id,u.numero),R=k=>joinNums(u.rel&&u.rel[k]);return[u.numero,u.segno||'positiva',u.definizione,d.saggio,d.sezDet,d.misure,R('copre'),R('copertoda'),R('taglia'),R('tagliatoda'),R('riempie'),R('riempitoda'),R('uguale'),u.colore,u.consistenza,u.descrizione,u.interpretazione,u.datazione,u.stato||'bozza']});
+    offerFile('Elenco US '+base+'.csv',new Blob(['﻿'+[head,...rows].map(r=>r.map(q).join(';')).join('\r\n')],{type:'text/csv'}))};
+  $('#bak').onclick=()=>{const docs=Object.fromEntries(Object.entries(S.docs).filter(([p,d])=>p==='scavi/'+sc.id||d.scavo===sc.id));
+    offerFile('Backup '+base+'.json',new Blob([JSON.stringify({app:'Taccuino sondaggi',scavo:sc.id,data:new Date().toISOString(),docs},null,1)],{type:'application/json'}))};
+  $('#rest').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text());if(j.app!=='Taccuino sondaggi'||!j.docs)throw new Error('Non è un backup del Taccuino sondaggi.');
+    let n=0;Object.entries(j.docs).forEach(([p,d])=>{if(p.startsWith('scavi/')&&!canEditScavo())return;put(p,d);n++});if(j.scavo)S.cur=j.scavo;say('mDat',`Ripristinati ${n} elementi.`);renderTabs()}catch(x){say('mDat',esc(x.message),true)}};
+}
+const safe=s=>String(s||'scavo').replace(/[–—]/g,'-').replace(/[\\/:*?"<>|]+/g,'-').slice(0,80);
+
+/* ---------- scavo */
+let nuovoScavo=false;
+function renderScavo(){
+  const sc=nuovoScavo?null:curScavo(),ed=canEditScavo(),v=k=>esc(sc?.[k]??'');
+  const F=(k,l,span,ph='')=>`<label class="f c${span}"><span>${l}</span><input data-sf="${k}" value="${v(k)}" placeholder="${esc(ph)}" ${ed?'':'disabled'}></label>`;
+  $('#main').innerHTML=`<div class="stack">
+    <div class="row"><h2>${sc?esc(scavoName(sc)):'Nuovo scavo'}</h2><span class="spacer"></span>${ed&&sc?'<button data-act="goNuovoScavo">+ Nuovo scavo</button>':''}</div>
+    <section class="panel"><h3>Dati dello scavo</h3>
+      <div class="grid12">${F('localita','Località',6,'Forlimpopoli')}${F('cantiere','Cantiere',6,'Ambito A13-06')}${F('anno','Anno',3,String(new Date().getFullYear()))}
+      ${F('ente','Ente responsabile',9)}${F('ufficio','Ufficio MiC competente per tutela',12,'Soprintendenza ABAP per le province di …')}
+      ${F('respScientifico','Responsabile scientifico delle indagini',6)}${F('identificativo','Identificativo del saggio di riferimento',6)}
+      ${F('intest1','Intestazione sezioni, riga 1',6,'automatica: LOCALITÀ ANNO')}${F('intest2','Intestazione sezioni, riga 2',6,'automatica: cantiere')}</div>
+      ${ed?(sc?'<p class="note">Le modifiche si salvano da sole.</p>':'<div><button class="primary" id="creaScavo">Crea lo scavo</button></div>'):'<p class="note">Solo responsabile e soci modificano i dati dello scavo.</p>'}
+    </section>
+    <section class="panel"><h3>Accesso</h3>
+      <p>Sei <b>${esc(me().nome||me().username||'')}</b> (${esc(me().ruolo||'')}) nell'archivio <b>${esc(API.archivio||'')}</b>.</p>
+      <p class="note">Ultima sincronizzazione: ${S.lastSync?new Date(S.lastSync).toLocaleString('it-IT'):'—'}${S.outbox.length?` · ${S.outbox.length} modifiche in attesa di invio`:''}</p>
+      <div class="row"><button id="syncNow">Sincronizza ora</button><button class="danger" id="logout">Esci</button></div>
+      <div id="outBox"></div>
+    </section></div>`;
+  const data=()=>Object.fromEntries($$('[data-sf]').map(e=>[e.dataset.sf,e.value.trim()]));
+  if(sc&&ed)$$('[data-sf]').forEach(e=>e.oninput=()=>{clearTimeout(e._t);e._t=setTimeout(()=>{const {id,...old}=curScavo();put('scavi/'+sc.id,{...old,...data()});renderTabs()},500)});
+  const c=$('#creaScavo');if(c)c.onclick=()=>{const d=data();if(!d.localita&&!d.cantiere)return toast('Scrivi almeno la località o il cantiere.');const id=uid('sc');put('scavi/'+id,d);S.cur=id;nuovoScavo=false;S.tab='trincee';persist();render()};
+  $('#syncNow').onclick=()=>sync().then(()=>render());
+  $('#logout').onclick=()=>{if(S.outbox.length){$('#outBox').innerHTML=`<div class="confirm"><span>Ci sono ${S.outbox.length} modifiche non ancora inviate: uscendo restano su questo dispositivo e partono al prossimo accesso con lo stesso archivio.</span><button class="sm danger" id="lgY">Esci comunque</button></div>`;$('#lgY').onclick=doLogout;return}doLogout()};
+}
+function doLogout(){api('logout').catch(()=>{});API={url:API.url};ls.set('ts-api',API);render()}
+
+/* ============================================================ controlli sui dati letti o dettati */
+/* b = {tipo,trincea,sezione,strati:[{us,cm,descr}]}; restituisce [{sev:'err'|'warn'|'info', t}] */
+function controlli(sc,b){
+  const out=[],add=(sev,t)=>out.push({sev,t});
+  const tipo=(b.tipo||'TRINCEA').toUpperCase(),trN=normNum(b.trincea);
+  if(!trN)add('err','Manca il numero della trincea.');
+  const tr=trN&&trinceeOf(sc).find(t=>(t.tipo||'TRINCEA')===tipo&&normNum(t.numero)===trN);
+  if(trN&&!tr)add('info',`${tipo} ${trN} non esiste ancora: verrà creata.`);
+  if(tr&&b.sezione&&sezioniOf(tr.id).some(s=>normNum(s.numero)===normNum(b.sezione)))add('warn',`La sezione ${b.sezione} della ${tipo} ${trN} esiste già: la nuova avrà il primo numero libero.`);
+  if(!b.sezione)add('info','Numero di sezione non indicato: verrà dato il primo libero.');
+  const st=b.strati||[];if(!st.length)add('err','Nessuno strato.');
+  const seen={};let tot=0;
+  st.forEach((x,i)=>{const n=normNum(x.us),cm=num(x.cm);tot+=cm;
+    if(!n)add('err',`Strato ${i+1}: manca il numero di US.`);
+    if(String(x.cm).trim()===''||cm<=0)add('err',`US ${n||'?'}: manca lo spessore.`);
+    else if(cm>300)add('warn',`US ${n}: spessore di ${cm} cm, insolito.`);
+    else if(cm<2)add('warn',`US ${n}: spessore di ${cm} cm, molto sottile.`);
+    if(n&&seen[n])add('warn',`US ${n} compare due volte nella stessa sezione.`);seen[n]=1;
+    const u=n&&findUs(sc,n);
+    if(u&&x.descr&&u.breve&&u.breve.trim().toLowerCase()!==String(x.descr).trim().toLowerCase())add('warn',`US ${n} è già descritta come «${u.breve}»; qui risulta «${x.descr}». Resta la descrizione già registrata.`);
+    if(n&&tr){const altrove=usInSezioni(sc,n).filter(w=>w.sez.trincea!==tr.id).map(w=>trShort(w.tr));if(altrove.length)add('info',`US ${n} compare già in ${[...new Set(altrove)].join(', ')}.`)}
+    if(n&&!u)add('info',`US ${n} è nuova: verrà creata la scheda.`)});
+  if(tot>500)add('warn',`Profondità totale di ${(tot/100).toFixed(2)} m, insolita.`);
+  return out;
+}
+const ctrlHtml=l=>l.map(c=>`<span class="${c.sev==='err'?'bad':c.sev==='warn'?'wrn':''}">${esc(c.t)}</span>`).join('');
+
+/* ============================================================ foto delle pagine del quaderno */
+const IDB={db:null,open(){return this.db||(this.db=new Promise((res,rej)=>{const r=indexedDB.open('ts-foto',1);r.onupgradeneeded=()=>r.result.createObjectStore('f');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}))},
+  async put(k,v){try{const d=await this.open();await new Promise((res,rej)=>{const t=d.transaction('f','readwrite');t.objectStore('f').put(v,k);t.oncomplete=res;t.onerror=()=>rej(t.error)})}catch(e){}},
+  async get(k){try{const d=await this.open();return await new Promise(res=>{const q=d.transaction('f').objectStore('f').get(k);q.onsuccess=()=>res(q.result||null);q.onerror=()=>res(null)})}catch(e){return null}},
+  async del(k){try{const d=await this.open();d.transaction('f','readwrite').objectStore('f').delete(k)}catch(e){}}};
+const fotoOf=sc=>coll('foto').filter(f=>f.scavo===sc).sort((a,b)=>(b.creata||0)-(a.creata||0));
+function saveFoto(f){const {id,...d}=f;put('foto/'+id,d)}
+const FSTATO={'da inviare':['Salvata qui, parte con la rete','warn'],'da leggere':['In attesa di lettura','warn'],'da verificare':['Letta: da verificare','err'],'da trascrivere':['Da trascrivere a mano','warn'],'verificata':['Verificata','ok'],'trascritta':['Trascritta','ok']};
+function riduciFoto(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();
+  im.onload=()=>{const m=2400,sc=Math.min(1,m/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>b?res(b):rej(new Error('Immagine non leggibile')),'image/jpeg',0.85)};
+  im.onerror=()=>rej(new Error('Formato immagine non leggibile: prova a scattare di nuovo.'));im.src=u})}
+async function fotoBlob(f){let b=await IDB.get(f.id);if(b)return b;if(!f.driveId||!navigator.onLine)return null;
+  const j=await api('getFile',{id:f.driveId});const bin=atob(j.base64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+  b=new Blob([u8],{type:j.mime||'image/jpeg'});IDB.put(f.id,b);return b}
+async function aggiungiFoto(file){
+  const sc=curScavo();const blob=await riduciFoto(file);const id=uid('f');await IDB.put(id,blob);
+  const d=new Date(),nome=`Pagina ${d.toLocaleDateString('it-IT').replace(/\//g,'-')} ${d.toTimeString().slice(0,5).replace(':','.')}`;
+  put('foto/'+id,{scavo:sc.id,nome,stato:'da inviare',creata:Date.now(),autore:me().username||''});
+  toast(navigator.onLine?'Foto salvata: la invio all’archivio…':'Foto salvata sul dispositivo: parte appena torna la rete.');
+  render();setTimeout(processFoto,300);
+}
+let fotoBusy=false;
+async function processFoto(){
+  if(fotoBusy||!navigator.onLine||!API.token)return;fotoBusy=true;
+  try{for(const f of coll('foto')){
+    try{
+      if(f.stato==='da inviare'){const blob=await IDB.get(f.id);if(!blob||S.outbox.some(o=>o.path==='scavi/'+f.scavo))continue;
+        const j=await api('saveFile',{scavo:f.scavo,cartella:'Foto quaderno',name:f.nome+'.jpg',base64:await b64(blob),mime:'image/jpeg'});
+        f.driveId=j.id;f.stato=API.ai?'da leggere':'da trascrivere';delete f.errore;saveFoto(f);softRender()}
+      if(f.stato==='da leggere'&&API.ai&&f.driveId&&f.autore===me().username){
+        const note=usOf(f.scavo).filter(u=>u.breve).map(u=>u.numero+': '+u.breve).join('; ');
+        const r=await api('leggiFoto',{id:f.driveId,usNote:note});
+        f.proposta=(r.sezioni||[]).map(s=>({tipo:String(s.tipo||'TRINCEA').toUpperCase(),trincea:String(s.trincea??''),sezione:String(s.sezione??''),
+          strati:(s.strati||[]).map(x=>({us:normNum(x.us),cm:x.cm==null?'':String(x.cm),descr:String(x.descr||'')})),dubbi:(s.dubbi||[]).map(String)}));
+        f.stato='da verificare';delete f.errore;saveFoto(f);toast('Pagina del quaderno letta: verifica i dati prima di salvarli.',5000);softRender()}
+    }catch(e){if(e.code==='offline')break;f.errore=e.message;if(f.stato==='da leggere'&&e.code==='no_ai')f.stato='da trascrivere';saveFoto(f);softRender()}
+  }}finally{fotoBusy=false}
+}
+function fotoPanel(sc){
+  const l=fotoOf(sc.id).filter(f=>!['verificata','trascritta'].includes(f.stato)||(Date.now()-(f.creata||0))<3*864e5);
+  return `<section class="panel lead">
+    <h3>Dal quaderno</h3>
+    <p class="note">Se piove o non puoi usare il tablet, scrivi sul quaderno e poi fotografa la pagina, anche senza rete: la foto resta qui e va nella cartella dello scavo appena c'è connessione. ${API.ai?'L’archivio la legge e prepara le sezioni: le salvi solo dopo averle verificate.':'Potrai aprirla accanto alla sezione mentre trascrivi i dati.'}</p>
+    <div class="row"><input type="file" id="fotoIn" accept="image/*" hidden><button class="primary" id="fotoGo">Fotografa o carica la pagina</button></div>
+    ${l.length?`<div class="fotos">${l.map(f=>{const st=FSTATO[f.stato]||[f.stato,''];return `<div class="foto"><b>${esc(f.nome)}</b>
+      <span class="chip ${st[1]==='ok'?'completa':st[1]==='err'?'neg':'bozza'}">${esc(st[0])}</span>${f.errore?`<span class="msg err">${esc(f.errore)}</span>`:''}
+      <div class="row">${f.stato==='da verificare'?`<button class="sm primary" data-act="verificaFoto" data-id="${esc(f.id)}">Verifica</button>`:''}
+      <button class="sm" data-act="vediFoto" data-id="${esc(f.id)}">Apri</button>
+      ${f.stato==='da trascrivere'?`<button class="sm" data-act="fotoFatta" data-id="${esc(f.id)}">Segna trascritta</button>`:''}
+      ${API.ai&&['da trascrivere','verificata'].includes(f.stato)&&f.driveId?`<button class="sm" data-act="rileggiFoto" data-id="${esc(f.id)}">Leggi</button>`:''}</div></div>`}).join('')}</div>`:''}
+  </section>`;
+}
+async function vediFoto(id){
+  const f=S.docs['foto/'+id];if(!f)return;let b=null;try{b=await fotoBlob({...f,id})}catch(e){}
+  if(!b)return toast('La foto non è su questo dispositivo: serve la rete per scaricarla dall’archivio.');
+  const u=URL.createObjectURL(b),ov=document.createElement('div');ov.className='ov';
+  ov.innerHTML=`<div class="ov-bar"><b>${esc(f.nome)}</b><span class="spacer"></span><button class="sm" id="ovZ">Ingrandisci</button><button class="sm primary" id="ovX">Chiudi</button></div><div class="ov-img"><img src="${u}" alt="${esc(f.nome)}"></div>`;
+  document.body.append(ov);let z=false;
+  ov.querySelector('#ovZ').onclick=()=>{z=!z;ov.querySelector('img').style.width=z?'250%':'';ov.querySelector('#ovZ').textContent=z?'Adatta':'Ingrandisci'};
+  ov.querySelector('#ovX').onclick=()=>{ov.remove();URL.revokeObjectURL(u)};
+}
+/* schermata di verifica: foto accanto ai dati letti, tutti modificabili, con i controlli */
+function renderVerifica(){
+  const f0=S.docs['foto/'+S.openFoto];if(!f0||!f0.proposta){S.view=null;return render()}
+  const sc=curScavo(),f={...JSON.parse(JSON.stringify(f0)),id:S.openFoto},P=f.proposta;
+  $('#main').innerHTML=`<div class="stack">
+    <div class="row"><button class="ghost" data-act="back">← Trincee</button><h2>Verifica la lettura</h2></div>
+    <p class="note">Confronta ogni valore con la foto e correggi dove serve. Le sezioni vengono create solo quando premi «Conferma». In rosso gli errori da correggere, in arancio i punti da controllare.</p>
+    <div class="two"><div class="sheet ver-img" data-act="vediFoto" data-id="${esc(f.id)}" title="Tocca per ingrandire"><img id="vImg" alt="Pagina del quaderno"></div>
+    <div class="stack" id="vBlocks"></div></div>
+    <div class="row"><button class="primary" id="vOk">Conferma e crea le sezioni</button><button id="vAdd">+ Sezione non letta</button><span class="spacer"></span><button class="danger" id="vNo">Scarta la lettura</button></div>
+    <span class="msg" id="vMsg"></span></div>`;
+  fotoBlob(f).then(b=>{if(b)$('#vImg').src=URL.createObjectURL(b)}).catch(()=>{});
+  const draw=()=>{const box=$('#vBlocks');box.innerHTML='';
+    P.forEach((b,bi)=>{const el=document.createElement('section');el.className='panel';
+      const tot=(b.strati||[]).reduce((a,x)=>a+num(x.cm),0)/100;
+      el.innerHTML=`<div class="grid12"><label class="f c4"><span>Tipo</span><select data-k="tipo">${['TRINCEA','SONDAGGIO','SAGGIO'].map(o=>`<option ${o===b.tipo?'selected':''}>${o}</option>`).join('')}</select></label>
+        <label class="f c4"><span>Numero</span><input data-k="trincea" value="${esc(b.trincea)}" inputmode="numeric"></label><label class="f c4"><span>Sezione n.</span><input data-k="sezione" value="${esc(b.sezione)}" inputmode="numeric"></label></div>
+        <div class="shdr"><span></span><span>US</span><span>Spess. cm</span><span>Descrizione letta</span><span></span></div>
+        ${(b.strati||[]).map((x,i)=>`<div class="strato"><span class="mono small muted">${i+1}</span><input data-s="${i}" data-f="us" value="${esc(x.us)}" class="mono"><input data-s="${i}" data-f="cm" value="${esc(x.cm)}" class="num" inputmode="decimal"><input data-s="${i}" data-f="descr" value="${esc(x.descr)}" class="d"><button class="x" data-del="${i}" aria-label="Elimina strato">✕</button></div>`).join('')}
+        <div class="row"><button class="sm" data-addst>+ Strato</button><span class="spacer"></span><span class="mono small">Totale ${tot.toFixed(2)} m</span></div>
+        ${(b.dubbi||[]).length?`<div class="derived"><b>Dubbi segnalati nella lettura</b>${b.dubbi.map((d,j)=>`<label class="row small"><input type="checkbox" data-dub="${j}" style="width:auto;min-height:auto"> ${esc(d)} <span class="muted">(spunta se l'hai controllato)</span></label>`).join('')}</div>`:''}
+        <div class="dprev ctrl">${ctrlHtml(controlli(sc.id,b))}</div>
+        <div class="row"><span class="spacer"></span><button class="sm danger" data-delb>Togli questa sezione</button></div>`;
+      const upd=()=>{el.querySelector('.ctrl').innerHTML=ctrlHtml(controlli(sc.id,b));f.proposta=P;saveFoto(f)};
+      el.querySelectorAll('[data-k]').forEach(i=>i.oninput=i.onchange=()=>{b[i.dataset.k]=i.value.trim();upd()});
+      el.querySelectorAll('[data-s]').forEach(i=>i.oninput=()=>{b.strati[+i.dataset.s][i.dataset.f]=i.dataset.f==='us'?normNum(i.value):i.value;upd()});
+      el.querySelectorAll('[data-del]').forEach(x=>x.onclick=()=>{b.strati.splice(+x.dataset.del,1);upd();draw()});
+      el.querySelector('[data-addst]').onclick=()=>{b.strati.push({us:'',cm:'',descr:''});upd();draw()};
+      el.querySelectorAll('[data-dub]').forEach(x=>x.onchange=()=>{b.ok=b.ok||{};b.ok[x.dataset.dub]=x.checked;upd()});
+      el.querySelectorAll('[data-dub]').forEach(x=>{x.checked=!!(b.ok&&b.ok[x.dataset.dub])});
+      el.querySelector('[data-delb]').onclick=()=>{P.splice(bi,1);upd();draw()};
+      box.append(el)})};
+  draw();
+  $('#vAdd').onclick=()=>{P.push({tipo:'TRINCEA',trincea:'',sezione:'',strati:[{us:'',cm:'',descr:''}],dubbi:[]});f.proposta=P;saveFoto(f);draw()};
+  $('#vNo').onclick=()=>{f.stato='da trascrivere';delete f.proposta;saveFoto(f);S.view=null;render()};
+  $('#vOk').onclick=()=>{
+    const errs=P.flatMap((b,i)=>controlli(sc.id,b).filter(c=>c.sev==='err').map(c=>`Sezione ${i+1}: ${c.t}`));
+    if(!P.length)return toast('Nessuna sezione da creare.');
+    if(errs.length){const m=$('#vMsg');m.textContent='Correggi prima: '+errs.join(' ');m.className='msg err';return}
+    const ids=[];
+    P.forEach(b=>{let t=trinceeOf(sc.id).find(x=>(x.tipo||'TRINCEA')===b.tipo&&normNum(x.numero)===normNum(b.trincea));
+      if(!t){const id=uid('t');put('trincee/'+id,{scavo:sc.id,tipo:b.tipo,numero:normNum(b.trincea)});t={id}}
+      const num0=b.sezione&&!sezioniOf(t.id).some(s=>normNum(s.numero)===normNum(b.sezione))?normNum(b.sezione):'';
+      const aperti=(b.dubbi||[]).filter((d,j)=>!(b.ok&&b.ok[j]));
+      const s=newSezione(t.id,num0,b.strati,aperti);const {id,...d}=s;d.foto=f.id;put('sezioni/'+id,d);ids.push(id)});
+    f.stato='verificata';f.sezioni=ids;saveFoto(f);toast(`Create ${ids.length} sezion${ids.length===1?'e':'i'} dalla pagina del quaderno.`);S.view=null;render()};
+}
+
+/* ---------- azioni */
+const ACT={
+  goNuovoScavo(){nuovoScavo=true;S.tab='scavo';S.view=null;render()},
+  nuovaTrincea(){const sc=curScavo(),tipo=$('#ntTipo').value,n=normNum($('#ntNum').value);if(!n)return toast('Scrivi il numero della trincea.');
+    if(trinceeOf(sc.id).some(t=>t.tipo===tipo&&normNum(t.numero)===n))return toast(`${tipo} ${n} esiste già.`);put('trincee/'+uid('t'),{scavo:sc.id,tipo,numero:n});render()},
+  delTrincea(d){remove('trincee/'+d.id);render()},
+  nuovaSez(d){const s=newSezione(d.id);openSez(s.id)},
+  apriSez(d){openSez(d.id)},
+  back(){S.view=null;S.tab='trincee';render()},
+  backUs(){S.view=null;S.tab='us';render()},
+  apriUs(d){openUs(d.id)},
+  apriUsNum(d){const sc=curScavo();const u=ensureUs(sc.id,d.n);openUs(u.id)},
+  vediFoto(d){vediFoto(d.id)},
+  verificaFoto(d){S.view='verifica';S.openFoto=d.id;S.tab='trincee';render();scrollTo(0,0)},
+  fotoFatta(d){const f=S.docs['foto/'+d.id];if(f){saveFoto({...f,id:d.id,stato:'trascritta'});render()}},
+  rileggiFoto(d){const f=S.docs['foto/'+d.id];if(f){saveFoto({...f,id:d.id,stato:'da leggere',autore:me().username});render();setTimeout(processFoto,200)}},
+  nuovaUs(){const sc=curScavo();const u=newUsRec(sc.id,nextUsNum(sc.id));openUs(u.id)}};
+document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(t&&ACT[t.dataset.act]){e.preventDefault();ACT[t.dataset.act](t.dataset,t)}
+  const tb=e.target.closest('#tabs button');if(tb){nuovoScavo=false;setTab(tb.dataset.tab)}});
+$('#scavoSel').onchange=e=>{S.cur=e.target.value;S.view=null;nuovoScavo=false;persist();render()};
+addEventListener('resize',()=>{clearTimeout(window.__rz);window.__rz=setTimeout(()=>{if(S.view==='sezione'){const s=S.docs['sezioni/'+S.openSez];if(s)previewSez({...s,id:S.openSez})}},150)});
+
+/* ---------- avvio */
+$('#ver').textContent='versione '+window.TS_BUILD;
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+loadLocal();render();renderSync();if(API.token)sync();
+fontsReady().then(()=>{if(S.view==='sezione')render()});
+</script>
+</body>
+</html>
