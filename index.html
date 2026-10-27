@@ -1047,7 +1047,7 @@ addEventListener('resize',()=>{clearTimeout(window.__rz);window.__rz=setTimeout(
 /* ---------- avvio */
 $('#ver').textContent='versione '+window.TS_BUILD;
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-  let ricaricata=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(ricaricata||!navigator.serviceWorker.controller)return;ricaricata=true;if(!document.querySelector('#main input:focus,#main textarea:focus'))location.reload()})}
+  let ricaricata=false;const avevaVersione=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(ricaricata||!avevaVersione)return;ricaricata=true;if(!document.querySelector('#main input:focus,#main textarea:focus'))location.reload()})}
 loadLocal();render();renderSync();if(API.token)sync();
 fontsReady().then(()=>{if(S.view==='sezione')render()});
 </script>
