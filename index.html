@@ -13,7 +13,7 @@
 <meta name="theme-color" content="#1F3A8A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=Jost:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-<script>window.TS_BUILD="27/10/2026 18:55";window.TS_ARCHIVIO="https://script.google.com/macros/s/AKfycbzJJWw3SdEXCEeQSdqbWqfBeIXuJ821r-CLaHYjGJTG-nQ7LV3-XyaDqXzkXKCMnPZT/exec";</script>
+<script>window.TS_BUILD="27/10/2026 19:05";window.TS_ARCHIVIO="https://script.google.com/macros/s/AKfycbzJJWw3SdEXCEeQSdqbWqfBeIXuJ821r-CLaHYjGJTG-nQ7LV3-XyaDqXzkXKCMnPZT/exec";</script>
 <style>
 /* Layout: blocco note da trincea — testata blu cobalto con scavo e stato, quattro schede (Trincee, US, Esporta, Scavo), contenuti a pannelli; una colonna sul telefono, due sul tablet orizzontale */
 :root{
@@ -73,8 +73,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--focus);outline:none;b
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
 .panel.lead{border-left:5px solid var(--accent-2)}
 .grid12{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px}
-.c12{grid-column:span 12}.c8{grid-column:span 8}.c6{grid-column:span 6}.c4{grid-column:span 4}.c3{grid-column:span 3}
-@media (max-width:720px){.c8,.c6,.c4{grid-column:span 12}.c3{grid-column:span 6}}
+.c12{grid-column:span 12}.c9{grid-column:span 9}.c8{grid-column:span 8}.c6{grid-column:span 6}.c4{grid-column:span 4}.c3{grid-column:span 3}
+@media (max-width:720px){.c9,.c8,.c6,.c4{grid-column:span 12}.c3{grid-column:span 6}}
 .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
 @media (max-width:980px){.two{grid-template-columns:minmax(0,1fr)}}
 .empty{border:1px dashed var(--line);border-radius:var(--r);padding:28px 20px;text-align:center;background:var(--sunk)}
@@ -117,6 +117,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--focus);outline:none;b
 .uscell{display:flex;min-width:0}.uscell input{border-top-right-radius:0;border-bottom-right-radius:0;font-family:var(--f-mono);font-weight:600}
 .uscell .pk{border-left:0;border-top-left-radius:0;border-bottom-left-radius:0;padding:0 9px;min-width:36px;justify-content:center;color:var(--muted);background:var(--sunk)}
 .uscell .pk[aria-expanded="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.combo{display:flex;align-items:stretch;min-width:0}.combo>input,.combo>textarea{border-top-right-radius:0;border-bottom-right-radius:0;flex:1;min-width:0}
+.combo>.pk{border-left:0;border-top-left-radius:0;border-bottom-left-radius:0;padding:0 12px;min-width:44px;justify-content:center;color:var(--muted);background:var(--sunk)}
+.combo>.pk[aria-expanded="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.usPick .chip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .usPick{display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:var(--sunk);border:1px solid var(--line);border-radius:var(--r)}
 table.us.mini{min-width:520px;font-size:14px}
 .sheet{background-color:var(--sunk);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:18px 18px;border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;justify-content:center;min-width:0}
@@ -340,17 +344,49 @@ function applySezRels(sc,nums){
 const nextUsNum=sc=>{const ns=usOf(sc).map(u=>parseInt(u.numero,10)).filter(n=>!isNaN(n));return String(ns.length?Math.max(...ns)+1:1)};
 
 /* voci suggerite: predefinite + quelle già usate nello scavo */
+/* voci dei menu a tendina: quelle del Taccuino di scavo, più alcune tipiche dei sondaggi; si arricchiscono con le voci usate nello scavo */
+const ENTI=['Soprintendenza Archeologia, Belle Arti e Paesaggio per la città metropolitana di Bologna',
+  'Soprintendenza Archeologia, Belle Arti e Paesaggio per le province di Modena, Reggio Emilia e Ferrara',
+  'Soprintendenza Archeologia, Belle Arti e Paesaggio per le province di Parma e Piacenza',
+  'Soprintendenza Archeologia, Belle Arti e Paesaggio per le province di Ravenna, Forlì-Cesena e Rimini'];
 const VOCI={
-  definizione:['strato','riempimento','taglio','interfaccia','piano d\'uso','crollo','livellamento','buca','fossa','deposito naturale','deposito alluvionale','suolo','arativo','suolo attivo superficiale'],
-  geologici:['argilla','limo','sabbia','sabbia fine','ghiaia','ghiaino','ciottoli','calcinelli','concrezioni calcaree','noduli ferro-manganesiferi','screziature'],
-  organici:['carboni','frustoli carboniosi','radici','resti vegetali','ossa animali','malacofauna','frustoli organici'],
-  artificiali:['frammenti di laterizi','frammenti ceramici','malta','intonaco','scorie','frammenti di vetro','frammenti di coppi'],
-  colore:['bruno','bruno scuro','bruno chiaro','marrone','marrone chiaro','marrone scuro','grigio','grigio chiaro','grigio scuro','grigio-verde','giallastro','beige','beige chiaro','nerastro','rossastro','ocra'],
-  consistenza:['compatta','molto compatta','mediamente compatta','friabile','sciolta','plastica','tenace'],
-  elementiDatanti:['ceramica','monete','vetro','nessuno'],
-  conservazione:['buono','discreto','cattivo'],
-  formazione:['naturale','artificiale','alluvionale','colluviale','antropico']};
-function vociFor(k,sc){const s=new Set(VOCI[k]||[]);usOf(sc).forEach(u=>tk(u[k]).forEach(v=>s.add(v)));return [...s].sort((a,b)=>a.localeCompare(b,'it'))}
+  definizione:['strato','riempimento','taglio','interfaccia','piano d\'uso','crollo','livellamento','buca','fossa','deposito naturale','deposito alluvionale','suolo','arativo','suolo attivo superficiale','struttura'],
+  formazione:['naturale','artificiale','naturale e artificiale','alluvionale','colluviale'],
+  criteri:['colore','consistenza','composizione','tessitura','limiti netti','limiti sfumati'],
+  geologici:['argilla','limo','sabbia','sabbia fine','ghiaia','ghiaino','ciottoli','pietre','frammenti di roccia','concrezioni','concrezioni calcaree','calcinelli','noduli ferro-manganesiferi','screziature'],
+  organici:['carboni','frustoli carboniosi','cenere','ossa animali','ossa umane','malacofauna','semi','legno','radici','resti vegetali','frustoli organici'],
+  artificiali:['frammenti laterizi','pezzame laterizio','ceramica','malta','intonaco','cocciopesto','tessere musive','scorie','metalli','vetro','stabilizzato','asfalto','cemento'],
+  colore:['bruno','bruno scuro','bruno chiaro','marrone','marrone chiaro','marrone scuro','grigio','grigio chiaro','grigio scuro','grigio-verde','nero','nerastro','beige','beige chiaro','giallastro','rossastro','verdastro','ocra'],
+  consistenza:['sciolta','friabile','scarsamente compatta','mediamente compatta','compatta','molto compatta','plastica','tenace'],
+  conservazione:['buono','discreto','mediocre','cattivo','parzialmente asportato'],
+  elementiDatanti:['ceramica','ceramica a vernice nera','terra sigillata italica','terra sigillata africana','anfore','ceramica comune','lucerne','monete','vetri','ceramica invetriata','maiolica','graffita','laterizi bollati','nessuno'],
+  attivita:['costruzione','uso','ristrutturazione','abbandono','distruzione','spoliazione','obliterazione'],
+  periodo:['età contemporanea','età moderna','età medievale','età tardoantica','età romana imperiale','età romana repubblicana','età del ferro','età del bronzo','preistoria'],
+  reperti:['ceramica','laterizi','metalli','vetro','ossa','monete','malacofauna','nessuno'],
+  campionature:['sedimento','carbone','malta','osso','legno','nessuna'],
+  flottazione:['sì','no','parziale'],setacciatura:['sì','no','parziale'],
+  posizione:['in tutta l’area','settore nord','settore sud','settore est','settore ovest','al centro dell’area','lungo la sezione'],
+  interpretazione:['preparazione stradale','livellamento','riporto','deposito alluvionale','deposito naturale','strato di abbandono','crollo',
+    'piano di calpestio','strato di frequentazione','riempimento di fossa','fossa di spoliazione','buca di palo','taglio di fossa','sepoltura','arativo'],
+  osservazioni:['sterile','antropizzato','molto disturbato','intaccato da radici','parzialmente asportato','indagato solo in parte'],
+  datazione:[],fase:[],responsabile:[]};
+/* voci a scelta multipla (separate da virgola) */
+const MULTI=new Set(['criteri','geologici','organici','artificiali','elementiDatanti','reperti','campionature','osservazioni']);
+function vociFor(k,sc){const s=new Set(VOCI[k]||[]);usOf(sc).forEach(u=>(MULTI.has(k)?tk(u[k]):[String(u[k]||'').trim()]).forEach(v=>{if(v&&v.length<60)s.add(v)}));return [...s].sort((a,b)=>a.localeCompare(b,'it'))}
+/* menu a tendina a pulsanti, comodo col dito: ▾ apre l'elenco; voci multiple si accendono e spengono, voce singola si sceglie */
+function pickHtml(k,inner){return `<div class="combo">${inner}<button type="button" class="pk" data-pk="${k}" aria-label="Scegli dall'elenco" aria-expanded="false">▾</button></div><div class="usPick" data-pl="${k}" hidden></div>`}
+function bindPick(root,getList,multiSet){
+  root.querySelectorAll('[data-pk]').forEach(b=>b.onclick=()=>{const k=b.dataset.pk,pl=root.querySelector(`[data-pl="${k}"]`),inp=b.parentNode.querySelector('input,textarea');
+    const open=pl.hidden;root.querySelectorAll('.usPick[data-pl]').forEach(x=>x.hidden=true);root.querySelectorAll('[data-pk]').forEach(x=>x.setAttribute('aria-expanded','false'));
+    if(!open)return;pl.hidden=false;b.setAttribute('aria-expanded','true');const multi=multiSet.has(k);
+    const draw=()=>{const cur=multi?tk(inp.value).map(x=>x.toLowerCase()):[inp.value.trim().toLowerCase()];
+      pl.innerHTML=getList(k).map(v=>`<button type="button" class="sm chip${cur.includes(v.toLowerCase())?' on':''}" data-v="${esc(v)}">${esc(v)}</button>`).join('')+`<span class="note" style="flex-basis:100%">${multi?'Puoi scegliere più voci; per una voce nuova scrivila nel campo.':'Per una voce nuova scrivila nel campo: la ritroverai qui.'}</span>`;
+      pl.querySelectorAll('[data-v]').forEach(c=>c.onclick=()=>{const v=c.dataset.v;
+        if(multi){const l=tk(inp.value),i=l.findIndex(x=>x.toLowerCase()===v.toLowerCase());if(i>=0)l.splice(i,1);else l.push(v);inp.value=l.join(', ')}else inp.value=v;
+        inp.dispatchEvent(new Event('input',{bubbles:true}));if(multi)draw();else{pl.hidden=true;b.setAttribute('aria-expanded','false')}})};
+    draw()});
+}
+
 
 /* ============================================================ disegno della sezione (stessa impaginazione dei disegni Rhino) */
 /* caratteri del disegno: Century Gothic dove c'è (PC con Office), altrimenti Jost, molto simile */
@@ -732,6 +768,8 @@ function renderScheda(){
   const missRel=['copre','copertoda'].map(k=>[k,d[k].filter(x=>!((r.rel&&r.rel[k])||[]).includes(x))]).filter(([,a])=>a.length);
   const field=([k,l,span,type,opts])=>{const v=r[k]??'';const auto=type==='auto'?d[k]:'';
     const lab=`<span>${esc(l)}${auto?` <small>(se vuoto: dalle sezioni)</small>`:''}</span>`;
+    if(VOCI[k]&&type!=='sel'&&type!=='date'){const el=type==='area'?`<textarea data-uf="${k}" rows="3">${esc(v)}</textarea>`:`<input data-uf="${k}" value="${esc(v)}" ${auto?`placeholder="${esc(auto)}"`:''}>`;
+      return `<div class="f c${span}">${lab}${pickHtml(k,el)}</div>`}
     if(type==='area')return `<label class="f c${span}">${lab}<textarea data-uf="${k}" rows="${k==='descrizione'?5:3}">${esc(v)}</textarea></label>`;
     if(type==='sel')return `<label class="f c${span}">${lab}<select data-uf="${k}">${opts.map(o=>`<option value="${esc(o)}" ${o===v?'selected':''}>${esc(o||'—')}</option>`).join('')}</select></label>`;
     if(type==='date')return `<label class="f c${span}">${lab}<input type="date" data-uf="${k}" value="${esc(v)}"></label>`;
@@ -765,6 +803,7 @@ function renderScheda(){
     ${['definizione','geologici','organici','artificiali','colore','consistenza','elementiDatanti','conservazione','formazione'].map(k=>`<datalist id="dl-${k}">${vociFor(k,sc.id).map(v=>`<option value="${esc(v)}">`).join('')}</datalist>`).join('')}
   </div>`;
   $$('[data-uf]').forEach(e=>e.addEventListener(e.tagName==='SELECT'?'change':'input',()=>{r[e.dataset.uf]=e.value;save()}));
+  bindPick($('#main'),k=>k==='responsabile'?[...new Set([...usOf(sc.id).map(u=>u.responsabile),me().nome].filter(Boolean))]:vociFor(k,sc.id),MULTI);
   $$('[data-rel]').forEach(e=>e.addEventListener('change',()=>{setRel(r,e.dataset.rel,e.value);e.value=joinNums(r.rel[e.dataset.rel]);saveUs(r)}));
   $$('[data-seg]').forEach(b=>b.onclick=()=>{r.segno=b.dataset.seg;$$('[data-seg]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));save()});
   $$('[data-st]').forEach(b=>b.onclick=()=>{r.stato=b.dataset.st;$$('[data-st]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));save()});
@@ -862,12 +901,13 @@ let nuovoScavo=false;
 function renderScavo(){
   const sc=nuovoScavo?null:curScavo(),ed=canEditScavo(),v=k=>esc(sc?.[k]??'');
   const F=(k,l,span,ph='')=>`<label class="f c${span}"><span>${l}</span><input data-sf="${k}" value="${v(k)}" placeholder="${esc(ph)}" ${ed?'':'disabled'}></label>`;
+  const P=(k,l,span,ph='')=>ed?`<div class="f c${span}"><span>${l}</span>${pickHtml('s_'+k,`<input data-sf="${k}" value="${v(k)}" placeholder="${esc(ph)}">`)}</div>`:F(k,l,span,ph);
   $('#main').innerHTML=`<div class="stack">
     <div class="row"><h2>${sc?esc(scavoName(sc)):'Nuovo scavo'}</h2><span class="spacer"></span>${ed&&sc?'<button data-act="goNuovoScavo">+ Nuovo scavo</button>':''}</div>
     <section class="panel"><h3>Dati dello scavo</h3>
       <div class="grid12">${F('localita','Località',6,'Forlimpopoli')}${F('cantiere','Cantiere',6,'Ambito A13-06')}${F('anno','Anno',3,String(new Date().getFullYear()))}
-      ${F('ente','Ente responsabile',9)}${F('ufficio','Ufficio MiC competente per tutela',12,'Soprintendenza ABAP per le province di …')}
-      ${F('respScientifico','Responsabile scientifico delle indagini',6)}${F('identificativo','Identificativo del saggio di riferimento',6)}
+      ${P('ente','Ente responsabile',9)}${P('ufficio','Ufficio MiC competente per tutela',12,'scegli dall’elenco o scrivi')}
+      ${P('respScientifico','Responsabile scientifico delle indagini',6)}${F('identificativo','Identificativo del saggio di riferimento',6)}
       ${F('intest1','Intestazione sezioni, riga 1',6,'automatica: LOCALITÀ ANNO')}${F('intest2','Intestazione sezioni, riga 2',6,'automatica: cantiere')}</div>
       ${ed?(sc?'<p class="note">Le modifiche si salvano da sole.</p>':'<div><button class="primary" id="creaScavo">Crea lo scavo</button></div>'):'<p class="note">Solo responsabile e soci modificano i dati dello scavo.</p>'}
     </section>
@@ -878,6 +918,8 @@ function renderScavo(){
       <div id="outBox"></div>
     </section></div>`;
   const data=()=>Object.fromEntries($$('[data-sf]').map(e=>[e.dataset.sf,e.value.trim()]));
+  const usati=k=>scavi().map(x=>x[k]).filter(Boolean);
+  bindPick($('#main'),k=>{k=k.slice(2);const sedi=['Bologna','Parma','Ravenna'];return [...new Set(k==='ufficio'?[...ENTI,...sedi,...usati('ufficio')]:k==='ente'?[...ENTI,...usati('ente')]:usati(k))]},new Set());
   if(sc&&ed)$$('[data-sf]').forEach(e=>e.oninput=()=>{clearTimeout(e._t);e._t=setTimeout(()=>{const {id,...old}=curScavo();put('scavi/'+sc.id,{...old,...data()});renderTabs()},500)});
   const c=$('#creaScavo');if(c)c.onclick=()=>{const d=data();if(!d.localita&&!d.cantiere)return toast('Scrivi almeno la località o il cantiere.');const id=uid('sc');put('scavi/'+id,d);S.cur=id;nuovoScavo=false;S.tab='trincee';persist();render()};
   $('#syncNow').onclick=()=>sync().then(()=>render());
