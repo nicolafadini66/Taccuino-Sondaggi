@@ -1,5 +1,5 @@
 /* Taccuino sondaggi — funzionamento offline: l'app resta sul dispositivo dopo la prima apertura con la rete */
-const VER = 'ts-2026-10-27-1850';
+const VER = 'ts-2026-10-27-1855';
 const SHELL = ['./', './index.html', './iccd.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-180.png'];
 const CDN = ['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'];
 self.addEventListener('install', e => {
@@ -25,7 +25,8 @@ self.addEventListener('fetch', e => {
     // app: prima la rete (così gli aggiornamenti arrivano), poi la copia salvata
     e.respondWith((async () => {
       try {
-        const r = await fetch(req);
+        // con la rete chiede sempre a GitHub la versione aggiornata (niente copia vecchia della cache del browser)
+        const r = await fetch(req, { cache: 'no-cache' });
         if (r.ok) { const c = await caches.open(VER); c.put(req.mode === 'navigate' ? './index.html' : req, r.clone()); }
         return r;
       } catch (x) {
