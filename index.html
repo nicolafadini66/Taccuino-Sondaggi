@@ -13,7 +13,7 @@
 <meta name="theme-color" content="#1F3A8A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=Jost:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-<script>window.TS_BUILD="27/10/2026 19:15";window.TS_ARCHIVIO="https://script.google.com/macros/s/AKfycbzJJWw3SdEXCEeQSdqbWqfBeIXuJ821r-CLaHYjGJTG-nQ7LV3-XyaDqXzkXKCMnPZT/exec";</script>
+<script>window.TS_BUILD="27/10/2026 19:25";window.TS_ARCHIVIO="https://script.google.com/macros/s/AKfycbzJJWw3SdEXCEeQSdqbWqfBeIXuJ821r-CLaHYjGJTG-nQ7LV3-XyaDqXzkXKCMnPZT/exec";</script>
 <style>
 /* Layout: blocco note da trincea — testata blu cobalto con scavo e stato, quattro schede (Trincee, US, Esporta, Scavo), contenuti a pannelli; una colonna sul telefono, due sul tablet orizzontale */
 :root{
@@ -805,14 +805,20 @@ function renderScheda(){
     </section>
     ${SCH.map(sec=>`<details class="sec" ${sec.closed?'':'open'}><summary><h3>${esc(sec.t)}</h3></summary>
       ${sec.rel?`<div class="relgrid">${REL_UI.map(([k,l])=>`<label class="f"><span>${esc(l)}</span><input data-rel="${k}" value="${esc(joinNums(r.rel&&r.rel[k]))}" placeholder="numeri separati da virgola"></label>`).join('')}</div>`
-      :`<div class="grid12">${sec.f.map(field).join('')}${sec.desc?`<div class="c12 row"><button class="sm" id="compose">Componi la descrizione dai campi</button>${API.ai?'<button class="sm" id="orto">Controlla l’ortografia</button>':''}<span class="msg" id="ortoMsg"></span></div><div class="c12" id="ortoRev"></div>`:''}</div>`}</details>`).join('')}
+      :`<div class="grid12">${sec.f.map(field).join('')}${sec.desc?`<div class="c12 row"><span class="note" id="descNota" style="flex-basis:100%"></span><button class="sm" id="compose">Torna alla descrizione automatica</button>${API.ai?'<button class="sm" id="orto">Controlla l’ortografia</button>':''}<span class="msg" id="ortoMsg"></span></div><div class="c12" id="ortoRev"></div>`:''}</div>`}</details>`).join('')}
     <section class="panel">
       <div class="row"><button class="primary" id="pdf">Scarica la scheda PDF</button><button id="pdfDrv">Salva nella cartella dello scavo</button><span class="spacer"></span><button class="sm danger" id="delUs">Elimina US</button></div>
       <span class="msg" id="uMsg"></span><div id="delBox"></div>
     </section>
     ${['definizione','geologici','organici','artificiali','colore','consistenza','elementiDatanti','conservazione','formazione'].map(k=>`<datalist id="dl-${k}">${vociFor(k,sc.id).map(v=>`<option value="${esc(v)}">`).join('')}</datalist>`).join('')}
   </div>`;
-  $$('[data-uf]').forEach(e=>e.addEventListener(e.tagName==='SELECT'?'change':'input',()=>{r[e.dataset.uf]=e.value;save()}));
+  /* descrizione che si compone da sola mentre si compilano le caselle; se la modifichi a mano resta la tua */
+  const comp=()=>composeDesc({...r,tipo:'US'});
+  if(r.descAuto===undefined)r.descAuto=!String(r.descrizione||'').trim()||r.descrizione===comp();
+  const descStato=()=>{const n=$('#descNota'),b=$('#compose');if(n)n.textContent=r.descAuto?'Si scrive da sola mentre compili le caselle (definizione, componenti, colore, consistenza…). Se la modifichi a mano, resta la tua.':'Descrizione modificata a mano: le caselle non la cambiano più.';if(b)b.hidden=!!r.descAuto};
+  const aggiornaDesc=()=>{if(!r.descAuto)return;const t=comp(),ta=$('[data-uf="descrizione"]');r.descrizione=t;if(ta&&document.activeElement!==ta)ta.value=t};
+  $$('[data-uf]').forEach(e=>e.addEventListener(e.tagName==='SELECT'?'change':'input',()=>{const k=e.dataset.uf;r[k]=e.value;
+    if(k==='descrizione')r.descAuto=!e.value.trim();else if(DESC_SRC.includes(k))aggiornaDesc();descStato();save()}));
   bindPick($('#main'),k=>k==='responsabile'?[...new Set([...usOf(sc.id).map(u=>u.responsabile),me().nome].filter(Boolean))]:vociFor(k,sc.id),MULTI);
   /* avviso quando una voce scritta a mano somiglia a una dell'elenco */
   const simili=e=>{const k=e.dataset.uf,box=$(`[data-sim="${k}"]`);if(!box)return;const ss=vociSimili(e.value,vociFor(k,sc.id,r.id),MULTI.has(k));
@@ -863,11 +869,11 @@ function renderScheda(){
       <div class="row"><button class="primary sm" id="qOk">Inserisci le voci spuntate</button><button class="sm" id="qNo">Annulla</button></div></div>`;
     $('#qNo').onclick=()=>{$('#quickRev').innerHTML='';m.textContent=''};
     $('#qOk').onclick=()=>{const done=[];rows.forEach((w,i)=>{if(!$(`[data-q="${i}"]`).checked)return;const v=$(`[data-qv="${i}"]`).value.trim();if(!v)return;
-        if(w.k.startsWith('rel:')){const rk=w.k.slice(4);setRel(r,rk,[...((r.rel&&r.rel[rk])||[]),...parseNums(v)])}else r[w.k]=v;done.push(w.lab.toLowerCase())});
-      saveUs(r);render();const mm=$('#quickMsg');if(mm)mm.textContent=done.length?'Inserito: '+done.join(' · '):'Nessuna voce inserita.'};
+        if(w.k.startsWith('rel:')){const rk=w.k.slice(4);setRel(r,rk,[...((r.rel&&r.rel[rk])||[]),...parseNums(v)])}else{r[w.k]=v;if(w.k==='descrizione')r.descAuto=false}done.push(w.lab.toLowerCase())});
+      if(r.descAuto!==false&&!done.includes('descrizione'))r.descrizione=composeDesc({...r,tipo:'US'});saveUs(r);render();const mm=$('#quickMsg');if(mm)mm.textContent=done.length?'Inserito: '+done.join(' · '):'Nessuna voce inserita.'};
   };
-  $('#compose').onclick=()=>{const t=composeDesc({...r,tipo:'US'});if(!t)return toast('Compila prima definizione, componenti, colore o consistenza.');
-    const ta=$('[data-uf="descrizione"]');ta.value=t;r.descrizione=t;save()};
+  $('#compose').onclick=()=>{r.descAuto=true;aggiornaDesc();if(!r.descrizione)toast('Compila definizione, componenti, colore o consistenza: la descrizione si forma da sola.');descStato();save()};
+  descStato();
   const msg=(t,e)=>{const m=$('#uMsg');m.textContent=t;m.className='msg'+(e?' err':'')};
   $('#pdf').onclick=async()=>{clearTimeout(usSaveT);saveUs(r);msg('Preparo il PDF…');try{await offerFile(usPdfName(r),await schedePdf([r],sc));msg('')}catch(e){msg(e.message,true)}};
   $('#pdfDrv').onclick=async()=>{clearTimeout(usSaveT);saveUs(r);msg('Salvo…');try{const j=await toDrive(sc,'Schede PDF',usPdfName(r),await schedePdf([r],sc));msg('Salvata in '+j.cartella)}catch(e){msg(e.message,true)}};
