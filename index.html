@@ -13,7 +13,7 @@
 <meta name="theme-color" content="#1F3A8A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=Jost:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-<script>window.TS_BUILD="27/10/2026 18:45";window.TS_ARCHIVIO="https://script.google.com/macros/s/AKfycbzJJWw3SdEXCEeQSdqbWqfBeIXuJ821r-CLaHYjGJTG-nQ7LV3-XyaDqXzkXKCMnPZT/exec";</script>
+<script>window.TS_BUILD="27/10/2026 18:50";window.TS_ARCHIVIO="https://script.google.com/macros/s/AKfycbzJJWw3SdEXCEeQSdqbWqfBeIXuJ821r-CLaHYjGJTG-nQ7LV3-XyaDqXzkXKCMnPZT/exec";</script>
 <style>
 /* Layout: blocco note da trincea — testata blu cobalto con scavo e stato, quattro schede (Trincee, US, Esporta, Scavo), contenuti a pannelli; una colonna sul telefono, due sul tablet orizzontale */
 :root{
@@ -210,7 +210,13 @@ const STANDALONE=matchMedia('(display-mode: standalone)').matches||navigator.sta
 /* ============================================================ archivio (Apps Script) */
 let API=ls.get('ts-api',{})||{};
 try{const q=new URLSearchParams(location.search).get('archivio');if(q&&q!==API.url){API={url:q};ls.set('ts-api',API)}}catch(e){}
-if(!API.url&&window.TS_ARCHIVIO){API={url:window.TS_ARCHIVIO};ls.set('ts-api',API)}
+/* indirizzo dell'archivio: accetta anche testo incollato con spazi, senza https o con altro intorno */
+function pulisciArchivio(raw){raw=String(raw||'').trim();const m=/(?:https?:\/\/)?script\.google(?:usercontent)?\.com\/[^\s"'<>»)]+/i.exec(raw);
+  if(m)return('https://'+m[0].replace(/^https?:\/\//i,'')).replace(/[.,;]+$/,'');const l=/^https?:\/\/localhost[:\/]\S*/i.exec(raw);return l?l[0]:''}
+const archivioOk=u=>/^https:\/\/script\.google(usercontent)?\.com\/macros\/s\/[\w-]+\/exec/i.test(u||'')||/^http:\/\/localhost[:\/]/.test(u||'');
+if(API.url&&!archivioOk(API.url)){const c=pulisciArchivio(API.url);API=c&&archivioOk(c)?{...API,url:c}:{}}
+if(!API.url&&window.TS_ARCHIVIO){API={url:window.TS_ARCHIVIO};}
+ls.set('ts-api',API);
 const err=(m,code)=>Object.assign(new Error(m),{code});
 async function api(action,payload={}){
   if(!API.url)throw err('Archivio non impostato','no_url');
@@ -530,9 +536,9 @@ function renderLogin(){
     <label class="f"><span>PIN</span><input id="lgPin" type="password" inputmode="numeric" autocomplete="current-password"></label>
     <div class="row"><button class="primary" id="lgGo">Entra</button>${API.url?'<button class="ghost" id="lgOther">Collegati a un altro archivio</button>':''}</div>
     <div id="lgMsg" class="msg" role="status"></div></section>`;
-  const go=async()=>{let url=API.url;if(!url){const raw=$('#lgUrl').value.trim(),m=/https?:\/\/\S+/i.exec(raw);url=m?m[0].replace(/[)\].,;"'»]+$/,''):raw}
+  const go=async()=>{let url=API.url;if(!url)url=pulisciArchivio($('#lgUrl').value);
     const u=$('#lgUser').value.trim(),pin=$('#lgPin').value.trim(),msg=$('#lgMsg');
-    if(!/^https:\/\/script\.google(usercontent)?\.com\//i.test(url)&&!/^http:\/\/localhost[:/]/.test(url)){msg.textContent='L’indirizzo dell’archivio deve iniziare con https://script.google.com/';msg.className='msg err';return}
+    if(!archivioOk(url)){msg.textContent=url?'Questo indirizzo non sembra quello dell’archivio: deve essere del tipo https://script.google.com/macros/s/…/exec':'Incolla l’indirizzo dell’archivio (quello che finisce con /exec).';msg.className='msg err';return}
     if(!u||!pin){msg.textContent='Scrivi nome utente e PIN.';msg.className='msg err';return}
     msg.textContent='Controllo…';msg.className='msg';API={url};
     try{const j=await api('login',{username:u,pin});API={url,token:j.token,user:j.user,archivio:j.archivio,ai:!!j.ai};ls.set('ts-api',API);loadLocal();render();sync()}
