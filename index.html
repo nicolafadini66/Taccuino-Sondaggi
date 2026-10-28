@@ -4,16 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Taccuino sondaggi</title>
-<link rel="manifest" href="manifest.webmanifest">
+<script>/* versione campo (telefono, solo immissione dati) o completa: ?modo=campo / ?modo=completo, ricordata sul dispositivo */
+(function(){var m=null;try{m=new URLSearchParams(location.search).get('modo');if(m)localStorage.setItem('ts-modo',m==='campo'?'campo':'completo');m=m||localStorage.getItem('ts-modo')}catch(e){}
+window.MODO_CAMPO=(m==='campo');if(window.MODO_CAMPO)document.documentElement.classList.add('campo')})();</script>
+<link rel="manifest" href="manifest.webmanifest" id="mfLink">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Sondaggi">
+<meta name="apple-mobile-web-app-title" content="Sondaggi" id="appTitle">
+<script>if(window.MODO_CAMPO){document.getElementById("mfLink").href="manifest-campo.webmanifest";document.getElementById("appTitle").content="Sondaggi campo"}</script>
 <meta name="theme-color" content="#1F3A8A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=Jost:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-<script>window.TS_BUILD="28/10/2026 17:30";window.TS_ARCHIVIO="https://script.google.com/macros/s/AKfycbzJJWw3SdEXCEeQSdqbWqfBeIXuJ821r-CLaHYjGJTG-nQ7LV3-XyaDqXzkXKCMnPZT/exec";</script>
+<script>window.TS_BUILD="28/10/2026 18:10";window.TS_ARCHIVIO="https://script.google.com/macros/s/AKfycbzJJWw3SdEXCEeQSdqbWqfBeIXuJ821r-CLaHYjGJTG-nQ7LV3-XyaDqXzkXKCMnPZT/exec";</script>
 <style>
 /* Layout: blocco note da trincea — testata blu cobalto con scavo e stato, quattro schede (Trincee, US, Esporta, Scavo), contenuti a pannelli; una colonna sul telefono, due sul tablet orizzontale */
 :root{
@@ -173,6 +177,7 @@ table.us{border-collapse:collapse;width:100%;min-width:720px;font-size:15px}
 @media (prefers-reduced-motion:reduce){.spin{animation:none}}
 #ver{position:fixed;right:8px;bottom:calc(4px + env(safe-area-inset-bottom,0px));font-size:10px;opacity:.45;pointer-events:none}
 button.mx-btn{font-weight:700;font-size:13px;letter-spacing:.04em;text-transform:uppercase;padding:6px 12px;border-radius:99px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.14);color:#fff;display:inline-flex;align-items:center;gap:7px;cursor:pointer}button.mx-btn svg{width:15px;height:15px}button.mx-btn[hidden]{display:none}button.mx-btn.mx-btn-l{border-color:var(--line);background:var(--surface);color:var(--accent)}
+html.campo nav.tabs button[data-tab=esporta],html.campo nav.tabs button[data-tab=scavo],html.campo #btnMatrix,html.campo #usMx{display:none!important}html.campo .solo-completa{display:none!important}html:not(.campo) .solo-campo{display:none!important}#toCompleta::before,#campoEsci::before{display:none}#toCompleta,#campoEsci{text-decoration:none;cursor:pointer}.campo-tag{font-size:11px;font-weight:800;letter-spacing:.08em;padding:2px 7px;border-radius:5px;margin-left:8px;vertical-align:middle}.campo-tag{background:#fff;color:var(--head)}
 </style>
 </head>
 <body>
@@ -181,11 +186,12 @@ button.mx-btn{font-weight:700;font-size:13px;letter-spacing:.04em;text-transform
     <div class="bar">
       <div class="brand">
         <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="7" fill="#fff"/><rect x="7" y="6" width="18" height="6" fill="#C2622D"/><rect x="7" y="12" width="18" height="7" fill="#D9B26F"/><rect x="7" y="19" width="18" height="7" fill="#1F3A8A"/><path d="M7 6v20M25 6v20" stroke="#141B2D" stroke-width="1.6" stroke-dasharray="4 1.6 1 1.6"/><path d="M5 6h22" stroke="#141B2D" stroke-width="1.6"/></svg>
-        Taccuino sondaggi
+        Taccuino sondaggi<span class="campo-tag solo-campo">CAMPO</span>
       </div>
       <div class="scavo-pick"><select id="scavoSel" aria-label="Scavo attivo"></select></div>
       <button type="button" id="btnMatrix" class="mx-btn" title="Matrix di Harris delle US">Matrix</button>
       <span id="sync" class="pill">Avvio…</span>
+      <a id="toCompleta" class="pill solo-campo" href="?modo=completo" hidden style="color:#fff;text-decoration:none">Versione completa</a><button type="button" id="campoEsci" class="pill solo-campo" hidden style="color:#fff;border:0;font:inherit;font-size:13px;font-weight:600">Esci</button>
     </div>
     <nav class="tabs" role="tablist" aria-label="Sezioni dell'app" id="tabs">
       <button role="tab" data-tab="trincee">Trincee<span class="count" id="cTr">0</span></button>
@@ -577,6 +583,9 @@ function renderTabs(){
   sel.disabled=!list.length;
 }
 function render(){
+  if(window.MODO_CAMPO&&!['trincee','us'].includes(S.tab)){S.tab='trincee';if(S.view==='verifica')S.view=null}
+  {const tc=$('#toCompleta'),ce=$('#campoEsci');if(window.MODO_CAMPO){if(tc)tc.hidden=!(API.token&&typeof canEditScavo==='function'&&canEditScavo());
+    if(ce){ce.hidden=!API.token;ce.onclick=()=>{if(S.outbox.length&&!confirm(`Ci sono ${S.outbox.length} modifiche non ancora inviate: restano su questo dispositivo e partono al prossimo accesso. Uscire?`))return;if(!S.outbox.length&&!confirm('Uscire dall’archivio su questo dispositivo?'))return;doLogout()}}}}
   if(!API.token){$('#tabs').hidden=true;$('#scavoSel').hidden=true;renderLogin();renderSync();return}
   $('#tabs').hidden=false;$('#scavoSel').hidden=false;
   if(!curScavo()){const l=scavi();S.cur=l.length?l[0].id:null}
