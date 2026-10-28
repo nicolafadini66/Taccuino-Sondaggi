@@ -17,7 +17,7 @@ window.MODO_CAMPO=(m==='campo');if(window.MODO_CAMPO)document.documentElement.cl
 <meta name="theme-color" content="#1F3A8A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=Jost:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-<script>window.TS_BUILD="28/10/2026 18:10";window.TS_ARCHIVIO="https://script.google.com/macros/s/AKfycbzJJWw3SdEXCEeQSdqbWqfBeIXuJ821r-CLaHYjGJTG-nQ7LV3-XyaDqXzkXKCMnPZT/exec";</script>
+<script>window.TS_BUILD="28/10/2026 18:20";window.TS_ARCHIVIO="https://script.google.com/macros/s/AKfycbzJJWw3SdEXCEeQSdqbWqfBeIXuJ821r-CLaHYjGJTG-nQ7LV3-XyaDqXzkXKCMnPZT/exec";</script>
 <style>
 /* Layout: blocco note da trincea — testata blu cobalto con scavo e stato, quattro schede (Trincee, US, Esporta, Scavo), contenuti a pannelli; una colonna sul telefono, due sul tablet orizzontale */
 :root{
@@ -579,11 +579,15 @@ function renderTabs(){
   $$('#tabs button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===S.tab)));
   $('#cTr').textContent=sc?trinceeOf(sc.id).length:0;$('#cUs').textContent=sc?usOf(sc.id).length:0;
   const sel=$('#scavoSel'),list=scavi();
-  sel.innerHTML=list.length?list.map(s=>`<option value="${esc(s.id)}" ${s.id===S.cur?'selected':''}>${esc(scavoName(s))}${s.anno?' · '+esc(s.anno):''}</option>`).join(''):'<option>Nessuno scavo</option>';
-  sel.disabled=!list.length;
+  sel.innerHTML=(list.length?list.map(s=>`<option value="${esc(s.id)}" ${s.id===S.cur&&!nuovoScavo?'selected':''}>${esc(scavoName(s))}${s.anno?' · '+esc(s.anno):''}</option>`).join(''):'<option value="">Nessuno scavo</option>')
+    +(canEditScavo()?`<option value="__new" ${nuovoScavo?'selected':''}>+ Nuovo scavo…</option>`:'');
+  sel.disabled=!list.length&&!canEditScavo();
 }
+function campoSoloNuovo(){if(!(window.MODO_CAMPO&&S.tab==='scavo'&&nuovoScavo))return;const m=$('#main');
+  m.querySelectorAll('section.panel').forEach(sec=>{if(!sec.querySelector('#creaScavo'))sec.hidden=true});
+  if(!m.querySelector('#campoAnn')){m.insertAdjacentHTML('afterbegin','<div class="row" style="margin:6px 0 10px"><button type="button" id="campoAnn">← Torna alle trincee</button></div>');$('#campoAnn').onclick=()=>{nuovoScavo=false;setTab('trincee')}}}
 function render(){
-  if(window.MODO_CAMPO&&!['trincee','us'].includes(S.tab)){S.tab='trincee';if(S.view==='verifica')S.view=null}
+  if(window.MODO_CAMPO&&!['trincee','us'].includes(S.tab)&&!(S.tab==='scavo'&&nuovoScavo)){S.tab='trincee';if(S.view==='verifica')S.view=null}
   {const tc=$('#toCompleta'),ce=$('#campoEsci');if(window.MODO_CAMPO){if(tc)tc.hidden=!(API.token&&typeof canEditScavo==='function'&&canEditScavo());
     if(ce){ce.hidden=!API.token;ce.onclick=()=>{if(S.outbox.length&&!confirm(`Ci sono ${S.outbox.length} modifiche non ancora inviate: restano su questo dispositivo e partono al prossimo accesso. Uscire?`))return;if(!S.outbox.length&&!confirm('Uscire dall’archivio su questo dispositivo?'))return;doLogout()}}}}
   if(!API.token){$('#tabs').hidden=true;$('#scavoSel').hidden=true;renderLogin();renderSync();return}
@@ -596,6 +600,7 @@ function render(){
   if(S.view==='scheda')return renderScheda();
   if(S.view==='verifica')return renderVerifica();
   ({trincee:renderTrincee,us:renderUsList,esporta:renderEsporta,scavo:renderScavo}[S.tab]||renderTrincee)();
+  campoSoloNuovo();
 }
 /* aggiorna dopo una sincronizzazione senza disturbare chi sta scrivendo */
 function softRender(){const a=document.activeElement;if(a&&a.closest&&a.closest('#main')&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)){renderTabs();return}render()}
@@ -1160,7 +1165,7 @@ const ACT={
   nuovaUs(){const sc=curScavo();const u=newUsRec(sc.id,nextUsNum(sc.id));openUs(u.id)}};
 document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(t&&ACT[t.dataset.act]){e.preventDefault();ACT[t.dataset.act](t.dataset,t)}
   const tb=e.target.closest('#tabs button');if(tb){nuovoScavo=false;setTab(tb.dataset.tab)}});
-$('#scavoSel').onchange=e=>{S.cur=e.target.value;S.view=null;nuovoScavo=false;persist();render()};
+$('#scavoSel').onchange=e=>{if(e.target.value==='__new'){nuovoScavo=true;S.tab='scavo';S.view=null;render();return}if(!e.target.value)return;S.cur=e.target.value;S.view=null;nuovoScavo=false;persist();render()};
 addEventListener('resize',()=>{clearTimeout(window.__rz);window.__rz=setTimeout(()=>{if(S.view==='sezione'){const s=S.docs['sezioni/'+S.openSez];if(s)previewSez({...s,id:S.openSez})}},150)});
 
 /* ---------- avvio */
